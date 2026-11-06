@@ -1,0 +1,6 @@
+{
+  "name": "DogSimulator.Editor",
+  "rootNamespace": "DogSimulator.Editor",
+  "references": ["DogSimulator.Runtime", "DogSimulator.Fusion", "Fusion.Unity", "Fusion.Unity.Editor", "Photon.Realtime", "Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro", "Unity.InputSystem.Editor"],
+  "includePlatforms": ["Editor"]
+}

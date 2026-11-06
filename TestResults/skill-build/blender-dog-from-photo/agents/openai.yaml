@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chó 3D từ ảnh + animation"
+  short_description: "Model chó mượt từ ảnh, có rig và animation cơ bản"
+  default_prompt: "Dùng $blender-dog-from-photo để tạo một model chó 3D mượt từ ảnh tôi gửi, có rig và các animation đứng, chạy, nhảy, sủa, ỉa, đái, cắn; không tạo thêm bản low-poly."

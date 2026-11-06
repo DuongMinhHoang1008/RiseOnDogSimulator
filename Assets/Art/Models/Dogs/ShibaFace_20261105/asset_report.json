@@ -1,0 +1,58 @@
+{
+  "vertices": 9948,
+  "triangles": 19728,
+  "bones": 27,
+  "max_influences": 4,
+  "mouth_seam_edges": 11,
+  "dimensions_m": [
+    0.4831,
+    1.2956,
+    1.1808
+  ],
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "fps": 30,
+      "frames": 61,
+      "loop": true
+    },
+    "Run": {
+      "seconds": 0.8,
+      "fps": 30,
+      "frames": 25,
+      "loop": true
+    },
+    "Jump": {
+      "seconds": 1.4,
+      "fps": 30,
+      "frames": 43,
+      "loop": false
+    },
+    "Bark": {
+      "seconds": 1.2,
+      "fps": 30,
+      "frames": 37,
+      "loop": false
+    },
+    "Poop": {
+      "seconds": 3.6,
+      "fps": 30,
+      "frames": 109,
+      "loop": false
+    },
+    "Pee": {
+      "seconds": 3.2,
+      "fps": 30,
+      "frames": 97,
+      "loop": false
+    },
+    "Bite": {
+      "seconds": 0.9,
+      "fps": 30,
+      "frames": 28,
+      "loop": false
+    }
+  },
+  "forward": "-Y in Blender; +Z up",
+  "textures": "2048 PNG base color and tangent normal; packed BLEND; embedded GLB/FBX"
+}

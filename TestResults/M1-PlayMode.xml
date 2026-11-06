@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="8" result="Passed" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.5406476">
+  <test-suite type="TestSuite" id="1018" name="DogSimulator" fullname="DogSimulator" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.540648" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1012" name="DogSimulator.PlayModeTests.dll" fullname="D:/IT/Game/RiseOnDogSimulator/Library/ScriptAssemblies/DogSimulator.PlayModeTests.dll" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.532813" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="4176" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1013" name="DogSimulator" fullname="DogSimulator" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.532112" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1014" name="Tests" fullname="DogSimulator.Tests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.531668" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestFixture" id="1001" name="DogInputTests" fullname="DogSimulator.Tests.DogInputTests" classname="DogSimulator.Tests.DogInputTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.302573" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1004" name="DisablingGameplayDiscardsMovementAndBufferedButtons" fullname="DogSimulator.Tests.DogInputTests.DisablingGameplayDiscardsMovementAndBufferedButtons" methodname="DisablingGameplayDiscardsMovementAndBufferedButtons" classname="DogSimulator.Tests.DogInputTests" runstate="Runnable" seed="1834882960" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.077268" asserts="0">
+              <properties>
+                <property name="_JOINTYPE" value="UnityCombinatorial" />
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1002" name="ExistingPcBindingsWorkAndJumpIsConsumedOnlyOnce" fullname="DogSimulator.Tests.DogInputTests.ExistingPcBindingsWorkAndJumpIsConsumedOnlyOnce" methodname="ExistingPcBindingsWorkAndJumpIsConsumedOnlyOnce" classname="DogSimulator.Tests.DogInputTests" runstate="Runnable" seed="686805172" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.006880" asserts="0">
+              <properties>
+                <property name="_JOINTYPE" value="UnityCombinatorial" />
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1003" name="ExpiredJumpDoesNotFireAfterSimulationPause" fullname="DogSimulator.Tests.DogInputTests.ExpiredJumpDoesNotFireAfterSimulationPause" methodname="ExpiredJumpDoesNotFireAfterSimulationPause" classname="DogSimulator.Tests.DogInputTests" runstate="Runnable" seed="1070213531" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.205841" asserts="0">
+              <properties>
+                <property name="_JOINTYPE" value="UnityCombinatorial" />
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1005" name="DogMotorTests" fullname="DogSimulator.Tests.DogMotorTests" classname="DogSimulator.Tests.DogMotorTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.021930" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1007" name="CameraYawRotatesMovementDirection" fullname="DogSimulator.Tests.DogMotorTests.CameraYawRotatesMovementDirection" methodname="CameraYawRotatesMovementDirection" classname="DogSimulator.Tests.DogMotorTests" runstate="Runnable" seed="81489724" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.010728" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1006" name="DiagonalMovementIsNormalizedAndRunningIsFaster" fullname="DogSimulator.Tests.DogMotorTests.DiagonalMovementIsNormalizedAndRunningIsFaster" methodname="DiagonalMovementIsNormalizedAndRunningIsFaster" classname="DogSimulator.Tests.DogMotorTests" runstate="Runnable" seed="1106448225" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.002420" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1009" name="FallingOutOfArenaRestoresSpawnAndClearsVelocity" fullname="DogSimulator.Tests.DogMotorTests.FallingOutOfArenaRestoresSpawnAndClearsVelocity" methodname="FallingOutOfArenaRestoresSpawnAndClearsVelocity" classname="DogSimulator.Tests.DogMotorTests" runstate="Runnable" seed="634931153" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.001989" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1008" name="JumpHasBoundedApexRejectsAirJumpAndLands" fullname="DogSimulator.Tests.DogMotorTests.JumpHasBoundedApexRejectsAirJumpAndLands" methodname="JumpHasBoundedApexRejectsAirJumpAndLands" classname="DogSimulator.Tests.DogMotorTests" runstate="Runnable" seed="1451312190" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.004295" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1010" name="PreviewFlowTests" fullname="DogSimulator.Tests.PreviewFlowTests" classname="DogSimulator.Tests.PreviewFlowTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.205517" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1011" name="MenuValidatesNameStartsLocalDriverAndResetsWithoutNetwork" fullname="DogSimulator.Tests.PreviewFlowTests.MenuValidatesNameStartsLocalDriverAndResetsWithoutNetwork" methodname="MenuValidatesNameStartsLocalDriverAndResetsWithoutNetwork" classname="DogSimulator.Tests.PreviewFlowTests" runstate="Runnable" seed="627563821" result="Passed" start-time="2026-11-04 14:28:14Z" end-time="2026-11-04 14:28:14Z" duration="0.204332" asserts="0">
+              <properties>
+                <property name="_JOINTYPE" value="UnityCombinatorial" />
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[Saving results to: C:/Users/admin/AppData/LocalLow/DefaultCompany/DogSimulator\TestResults.xml
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

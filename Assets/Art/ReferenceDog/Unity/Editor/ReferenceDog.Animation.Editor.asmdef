@@ -1,0 +1,6 @@
+{
+  "name": "ReferenceDog.Animation.Editor",
+  "rootNamespace": "ReferenceDog.Animation.Editor",
+  "references": ["ReferenceDog.Animation"],
+  "includePlatforms": ["Editor"]
+}

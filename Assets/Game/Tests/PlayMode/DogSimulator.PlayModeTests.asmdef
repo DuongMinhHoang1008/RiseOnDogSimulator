@@ -1,0 +1,7 @@
+{
+  "name": "DogSimulator.PlayModeTests",
+  "references": ["DogSimulator.Runtime", "DogSimulator.Fusion", "Fusion.Unity", "Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll", "Fusion.Common.dll", "Fusion.Log.dll", "Fusion.Runtime.dll"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

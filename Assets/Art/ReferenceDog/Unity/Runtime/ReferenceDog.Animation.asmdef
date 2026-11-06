@@ -1,0 +1,5 @@
+{
+  "name": "ReferenceDog.Animation",
+  "rootNamespace": "ReferenceDog.Animation",
+  "references": ["Unity.InputSystem"]
+}

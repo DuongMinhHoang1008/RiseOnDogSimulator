@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="22" result="Passed" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.230847">
+  <test-suite type="TestSuite" id="1000" name="DogSimulator" fullname="DogSimulator" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.230847" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1029" name="DogSimulator.EditModeTests.dll" fullname="D:/IT/Game/RiseOnDogSimulator/Library/ScriptAssemblies/DogSimulator.EditModeTests.dll" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.224418" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="16500" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1030" name="DogSimulator" fullname="DogSimulator" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.220560" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1031" name="Tests" fullname="DogSimulator.Tests" runstate="Runnable" testcasecount="22" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.219784" total="22" passed="22" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestFixture" id="1001" name="GuestAndRoomTests" fullname="DogSimulator.Tests.GuestAndRoomTests" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" testcasecount="21" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.124717" total="21" passed="21" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1026" name="GeneratedCodesFitTheInviteContract" fullname="DogSimulator.Tests.GuestAndRoomTests.GeneratedCodesFitTheInviteContract" methodname="GeneratedCodesFitTheInviteContract" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="2063355341" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.057636" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1005" name="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.013833" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;  Cún Văn Phòng  &quot;,&quot;Cún Văn Phòng&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;  Cún Văn Phòng  &quot;,&quot;Cún Văn Phòng&quot;)" methodname="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1587418057" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.001126" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;Dog 🐕&quot;,&quot;Dog 🐕&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;Dog 🐕&quot;,&quot;Dog 🐕&quot;)" methodname="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="113152924" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000337" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;abcdefghijklmnop&quot;,&quot;abcdefghijklmnop&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(&quot;abcdefghijklmnop&quot;,&quot;abcdefghijklmnop&quot;)" methodname="GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="844528545" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000292" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1013" name="GuestNameRejectsInvalidPayload" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.029012" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1006" name="GuestNameRejectsInvalidPayload(null)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(null)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1545871451" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.006613" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="GuestNameRejectsInvalidPayload(&quot; &quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot; &quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1700534767" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000648" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="GuestNameRejectsInvalidPayload(&quot;A&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot;A&quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1396646971" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000596" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1009" name="GuestNameRejectsInvalidPayload(&quot;abcdefghijklmnopq&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot;abcdefghijklmnopq&quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1775994946" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000381" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="GuestNameRejectsInvalidPayload(&quot;Dog\n&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot;Dog\n&quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1326983871" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.001660" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="GuestNameRejectsInvalidPayload(&quot;Dog\tName&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot;Dog\tName&quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1130203447" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000271" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="GuestNameRejectsInvalidPayload(&quot;Dog​Name&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(&quot;Dog​Name&quot;)" methodname="GuestNameRejectsInvalidPayload" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="2072335108" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000100" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1014" name="GuestNameRejectsUnpairedSurrogatesWithoutTestArgumentEncoding" fullname="DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsUnpairedSurrogatesWithoutTestArgumentEncoding" methodname="GuestNameRejectsUnpairedSurrogatesWithoutTestArgumentEncoding" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="2094729401" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000245" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1017" name="InviteCodeNormalizesWithoutChangingItsMeaning" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeNormalizesWithoutChangingItsMeaning" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000920" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1015" name="InviteCodeNormalizesWithoutChangingItsMeaning(&quot;  abcd23  &quot;,&quot;ABCD23&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeNormalizesWithoutChangingItsMeaning(&quot;  abcd23  &quot;,&quot;ABCD23&quot;)" methodname="InviteCodeNormalizesWithoutChangingItsMeaning" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="309210242" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000167" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="InviteCodeNormalizesWithoutChangingItsMeaning(&quot;EFGH4567&quot;,&quot;EFGH4567&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeNormalizesWithoutChangingItsMeaning(&quot;EFGH4567&quot;,&quot;EFGH4567&quot;)" methodname="InviteCodeNormalizesWithoutChangingItsMeaning" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1299667102" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000064" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1025" name="InviteCodeRejectsInvalidOrAmbiguousCharacters" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.002101" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1018" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(null)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(null)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="196664211" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000128" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCDE&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCDE&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1667277129" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000063" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCDEFGH2&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCDEFGH2&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="608189722" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000058" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC I2&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC I2&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="682744251" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000059" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1022" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC012&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC012&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="803609698" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000061" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCＯ23&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABCＯ23&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1180801162" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000403" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1024" name="InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC\n23&quot;)" fullname="DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(&quot;ABC\n23&quot;)" methodname="InviteCodeRejectsInvalidOrAmbiguousCharacters" classname="DogSimulator.Tests.GuestAndRoomTests" runstate="Runnable" seed="1239771119" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.000065" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1027" name="PreviewSceneTests" fullname="DogSimulator.Tests.PreviewSceneTests" classname="DogSimulator.Tests.PreviewSceneTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.093885" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1028" name="PreviewHasOneDriverAndValidSerializedReferences" fullname="DogSimulator.Tests.PreviewSceneTests.PreviewHasOneDriverAndValidSerializedReferences" methodname="PreviewHasOneDriverAndValidSerializedReferences" classname="DogSimulator.Tests.PreviewSceneTests" runstate="Runnable" seed="430951571" result="Passed" start-time="2026-11-04 14:22:04Z" end-time="2026-11-04 14:22:04Z" duration="0.093223" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[Saving results to: C:/Users/admin/AppData/LocalLow/DefaultCompany/DogSimulator\TestResults.xml
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2169946682308050448
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7822679477663993813}
+  - component: {fileID: 1590955702481578916}
+  - component: {fileID: 3078626656486998020}
+  m_Layer: 0
+  m_Name: SandboxInteractionRegistry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7822679477663993813
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2169946682308050448}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1590955702481578916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2169946682308050448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1552182283, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Fusion.Runtime.dll::Fusion.NetworkObject
+  SortKey: 3304852324
+  SendPriority: 1
+  EnableInterpolation: 1
+  Flags: 131074
+  NestedObjects: []
+  NetworkedBehaviours:
+  - {fileID: 3078626656486998020}
+  ForceRemoteRenderTimeframe: 0
+--- !u!114 &3078626656486998020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2169946682308050448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9049acce08f07a4eb4165851f79d898, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DogSimulator.Fusion::DogSimulator.Networking.SandboxInteractionRegistry
+  carryablePrefabs:
+  - {fileID: 8040060685063647807, guid: 27ed050faaf54054ebb38ea120cbd309, type: 3}
+  - {fileID: 1900971405117691222, guid: 34934288c44eb82439d65bd94feea0f1, type: 3}
+  - {fileID: 336741267998007576, guid: 66b35800b5725454ca6423f474d8939a, type: 3}
+  - {fileID: 336741267998007576, guid: 66b35800b5725454ca6423f474d8939a, type: 3}
+  - {fileID: 336741267998007576, guid: 66b35800b5725454ca6423f474d8939a, type: 3}
+  spawnPositions:
+  - {x: -4, y: 0.45, z: 3}
+  - {x: 0, y: 0.6, z: 2}
+  - {x: 4, y: 0.65, z: 3}
+  - {x: 6, y: 0.65, z: 1}
+  - {x: 5, y: 0.65, z: -2}

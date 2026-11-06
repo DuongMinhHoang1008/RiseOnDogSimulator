@@ -1,0 +1,6 @@
+{
+  "name": "DogSimulator.Runtime",
+  "rootNamespace": "DogSimulator",
+  "references": ["Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro"],
+  "autoReferenced": true
+}

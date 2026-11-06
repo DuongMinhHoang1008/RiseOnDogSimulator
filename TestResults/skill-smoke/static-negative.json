@@ -1,0 +1,9 @@
+{
+  "input": "D:\\IT\\Game\\RiseOnDogSimulator\\Assets\\Art\\ReferenceDog\\realistic_low_vertex\\Dog.blend",
+  "blender_version": "5.2.3 LTS",
+  "errors": [
+    "ValueError: Expected one armature; use --rig to select one. Found: []"
+  ],
+  "warnings": [],
+  "status": "FAIL"
+}

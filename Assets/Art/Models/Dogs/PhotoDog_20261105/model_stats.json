@@ -1,0 +1,54 @@
+{
+  "blender": "5.2.3 LTS",
+  "vertices": 9100,
+  "triangles": 18048,
+  "bones": 27,
+  "mouth_seam_edges": 11,
+  "dimensions_m": [
+    0.5172072649002075,
+    1.2250268459320068,
+    1.2889059782028198
+  ],
+  "clips": {
+    "Idle": {
+      "frames": 61,
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Run": {
+      "frames": 25,
+      "seconds": 0.8,
+      "loop": true
+    },
+    "Jump": {
+      "frames": 43,
+      "seconds": 1.4,
+      "loop": false
+    },
+    "Bark": {
+      "frames": 37,
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Poop": {
+      "frames": 109,
+      "seconds": 3.6,
+      "loop": false
+    },
+    "Pee": {
+      "frames": 97,
+      "seconds": 3.2,
+      "loop": false
+    },
+    "Bite": {
+      "frames": 28,
+      "seconds": 0.9,
+      "loop": false
+    }
+  },
+  "limitations": [
+    "Single-view reconstruction: side/back/tail inferred.",
+    "Photo color contains original baked illumination.",
+    "Basic game animation, no Unity integration."
+  ]
+}

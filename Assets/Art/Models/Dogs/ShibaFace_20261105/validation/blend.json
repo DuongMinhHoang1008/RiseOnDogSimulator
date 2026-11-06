@@ -1,0 +1,109 @@
+{
+  "input": "D:\\IT\\Game\\RiseOnDogSimulator\\Exports\\ShibaFace_20261105\\model\\Dog_Rigged.blend",
+  "blender_version": "5.2.3 LTS",
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "ShibaFace_Mesh",
+      "vertices": 9948,
+      "triangles": 19728,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "Dog_BaseColor",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    },
+    {
+      "name": "Dog_Normal",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "Non-Color"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        1.0,
+        61.0
+      ],
+      "duration_seconds": 2.0,
+      "sampled_max_vertex_motion": 0.05688847582918816,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        1.0,
+        25.0
+      ],
+      "duration_seconds": 0.8,
+      "sampled_max_vertex_motion": 0.22989089903057916,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        1.0,
+        43.0
+      ],
+      "duration_seconds": 1.4,
+      "sampled_max_vertex_motion": 0.3138938585514585,
+      "loop_endpoint_delta": 0.004427697140961813
+    },
+    "Bark": {
+      "frames": [
+        1.0,
+        37.0
+      ],
+      "duration_seconds": 1.2,
+      "sampled_max_vertex_motion": 0.08674837559944495,
+      "loop_endpoint_delta": 0.0
+    },
+    "Poop": {
+      "frames": [
+        1.0,
+        109.0
+      ],
+      "duration_seconds": 3.6,
+      "sampled_max_vertex_motion": 0.15320227450144966,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        1.0,
+        97.0
+      ],
+      "duration_seconds": 3.2,
+      "sampled_max_vertex_motion": 0.34053356492070574,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        1.0,
+        28.0
+      ],
+      "duration_seconds": 0.9,
+      "sampled_max_vertex_motion": 0.10080305238381528,
+      "loop_endpoint_delta": 8.142688234354627e-05
+    }
+  },
+  "vertices": 9948,
+  "triangles": 19728,
+  "max_influences": 4,
+  "status": "PASS"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "DogSimulator.Fusion",
+  "rootNamespace": "DogSimulator.Networking",
+  "references": ["DogSimulator.Runtime", "Fusion.Unity", "Photon.Realtime", "Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro"]
+}

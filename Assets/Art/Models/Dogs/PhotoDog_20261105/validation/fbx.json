@@ -1,0 +1,119 @@
+{
+  "input": "D:\\IT\\Game\\RiseOnDogSimulator\\Exports\\PhotoDog_20261105\\validation\\Dog_Rigged.fbx",
+  "blender_version": "5.2.3 LTS",
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "PhotoDog_Mesh",
+      "vertices": 9100,
+      "triangles": 18048,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "Dog_BaseColor",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    },
+    {
+      "name": "Dog_BaseColor.001",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "Non-Color"
+    },
+    {
+      "name": "Dog_Normal",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "Non-Color"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        1.0,
+        61.0
+      ],
+      "duration_seconds": 2.0,
+      "sampled_max_vertex_motion": 0.01897092941820407,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        1.0,
+        25.0
+      ],
+      "duration_seconds": 0.8,
+      "sampled_max_vertex_motion": 0.22989087817348383,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        1.0,
+        43.0
+      ],
+      "duration_seconds": 1.4,
+      "sampled_max_vertex_motion": 0.31389709126500254,
+      "loop_endpoint_delta": 0.004427714267008139
+    },
+    "Bark": {
+      "frames": [
+        1.0,
+        37.0
+      ],
+      "duration_seconds": 1.2,
+      "sampled_max_vertex_motion": 0.04061528005454739,
+      "loop_endpoint_delta": 0.0
+    },
+    "Poop": {
+      "frames": [
+        1.0,
+        109.0
+      ],
+      "duration_seconds": 3.6,
+      "sampled_max_vertex_motion": 0.14700010470132815,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        1.0,
+        97.0
+      ],
+      "duration_seconds": 3.2,
+      "sampled_max_vertex_motion": 0.3797165757003912,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        1.0,
+        28.0
+      ],
+      "duration_seconds": 0.9,
+      "sampled_max_vertex_motion": 0.11564119090612848,
+      "loop_endpoint_delta": 8.143704766728745e-05
+    }
+  },
+  "vertices": 9100,
+  "triangles": 18048,
+  "max_influences": 4,
+  "status": "PASS"
+}

@@ -1,0 +1,173 @@
+{
+    "status": "PASS",
+    "variants": [
+        {
+            "variant": "low_poly",
+            "skinBones": 27,
+            "vertices": 9180,
+            "clips": [
+                {
+                    "name": "Idle",
+                    "seconds": 2.0,
+                    "loop": true,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5173785090446472,
+                        "y": 1.4425290822982789,
+                        "z": 1.3213982582092286
+                    }
+                },
+                {
+                    "name": "Run",
+                    "seconds": 0.8000000715255737,
+                    "loop": true,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5150160789489746,
+                        "y": 1.4560668468475342,
+                        "z": 1.3400142192840577
+                    }
+                },
+                {
+                    "name": "Jump",
+                    "seconds": 1.4000000953674317,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5150159597396851,
+                        "y": 1.4729427099227906,
+                        "z": 1.5716657638549805
+                    }
+                },
+                {
+                    "name": "Bark",
+                    "seconds": 1.2000000476837159,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5150159597396851,
+                        "y": 1.440780758857727,
+                        "z": 1.3169560432434083
+                    }
+                },
+                {
+                    "name": "Poop",
+                    "seconds": 3.6000001430511476,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5150159597396851,
+                        "y": 1.4807584285736085,
+                        "z": 1.431762456893921
+                    }
+                },
+                {
+                    "name": "Pee",
+                    "seconds": 3.200000286102295,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.7563501596450806,
+                        "y": 1.4827898740768433,
+                        "z": 1.3416495323181153
+                    }
+                },
+                {
+                    "name": "Bite",
+                    "seconds": 0.9000000357627869,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.5150160789489746,
+                        "y": 1.514952301979065,
+                        "z": 1.3251992464065552
+                    }
+                }
+            ]
+        },
+        {
+            "variant": "realistic_low_vertex",
+            "skinBones": 27,
+            "vertices": 8199,
+            "clips": [
+                {
+                    "name": "Idle",
+                    "seconds": 2.0,
+                    "loop": true,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.49943286180496218,
+                        "y": 1.4405016899108887,
+                        "z": 1.3297991752624512
+                    }
+                },
+                {
+                    "name": "Run",
+                    "seconds": 0.8000000715255737,
+                    "loop": true,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.4969778060913086,
+                        "y": 1.4680285453796387,
+                        "z": 1.3521809577941895
+                    }
+                },
+                {
+                    "name": "Jump",
+                    "seconds": 1.4000000953674317,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.4969777762889862,
+                        "y": 1.4708906412124634,
+                        "z": 1.5800689458847047
+                    }
+                },
+                {
+                    "name": "Bark",
+                    "seconds": 1.2000000476837159,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.4969777464866638,
+                        "y": 1.439041018486023,
+                        "z": 1.3253514766693116
+                    }
+                },
+                {
+                    "name": "Poop",
+                    "seconds": 3.6000001430511476,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.4969777464866638,
+                        "y": 1.4845209121704102,
+                        "z": 1.4408618211746216
+                    }
+                },
+                {
+                    "name": "Pee",
+                    "seconds": 3.200000286102295,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.7525790333747864,
+                        "y": 1.4797306060791016,
+                        "z": 1.3500385284423829
+                    }
+                },
+                {
+                    "name": "Bite",
+                    "seconds": 0.9000000357627869,
+                    "loop": false,
+                    "controllerPlayback": "PASS",
+                    "sampledBounds": {
+                        "x": 0.496977835893631,
+                        "y": 1.5116616487503052,
+                        "z": 1.3335946798324586
+                    }
+                }
+            ]
+        }
+    ]
+}

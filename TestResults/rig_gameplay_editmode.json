@@ -1,0 +1,237 @@
+{
+  "status": "completed",
+  "duration": 0.89,
+  "summary": {
+    "total": 32,
+    "passed": 32,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "results": [
+    {
+      "FullName": "DogSimulator.Tests.DogGameplaySetupTests.GameplayJumpKeepsPoseButRemovesTheSecondVerticalJump",
+      "Status": "Passed",
+      "Duration": 0.0767061,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplaySetupTests.PlayerUsesRiggedVisualAndGameplayControllerWithoutDemoAutoplay",
+      "Status": "Passed",
+      "Duration": 0.0108675,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.CreationCollisionMustNotBeAcceptedAsOurRoom",
+      "Status": "Passed",
+      "Duration": 0.0049891,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.GeneratedNetworkPrefabAndSceneRespectTheSingleDriverBoundary",
+      "Status": "Passed",
+      "Duration": 0.022807,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MatchmakingIsSharedPrivateAndExplicitAboutCreation(False)",
+      "Status": "Passed",
+      "Duration": 0.0098209,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MatchmakingIsSharedPrivateAndExplicitAboutCreation(True)",
+      "Status": "Passed",
+      "Duration": 0.0006086,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MissingOrInvalidAppIdIsRejectedBeforeConnecting(null)",
+      "Status": "Passed",
+      "Duration": 0.0033049,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MissingOrInvalidAppIdIsRejectedBeforeConnecting(\"\")",
+      "Status": "Passed",
+      "Duration": 0.0009072,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MissingOrInvalidAppIdIsRejectedBeforeConnecting(\"invalid\")",
+      "Status": "Passed",
+      "Duration": 0.0006064,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionSetupTests.MissingOrInvalidAppIdIsRejectedBeforeConnecting(\"00000000-0000-0000-0000-000000000000\")",
+      "Status": "Passed",
+      "Duration": 0.0003497,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GeneratedCodesFitTheInviteContract",
+      "Status": "Passed",
+      "Duration": 0.0119483,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(\"  Cún Văn Phòng  \",\"Cún Văn Phòng\")",
+      "Status": "Passed",
+      "Duration": 0.0013271,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(\"Dog 🐕\",\"Dog 🐕\")",
+      "Status": "Passed",
+      "Duration": 0.000327,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameAcceptsBoundedUnicodeAndTrimsWhitespace(\"abcdefghijklmnop\",\"abcdefghijklmnop\")",
+      "Status": "Passed",
+      "Duration": 0.000106,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(null)",
+      "Status": "Passed",
+      "Duration": 0.0012699,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\" \")",
+      "Status": "Passed",
+      "Duration": 0.0004777,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\"A\")",
+      "Status": "Passed",
+      "Duration": 0.0003758,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\"abcdefghijklmnopq\")",
+      "Status": "Passed",
+      "Duration": 0.0003666,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\"Dog\\n\")",
+      "Status": "Passed",
+      "Duration": 0.0001458,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\"Dog\\tName\")",
+      "Status": "Passed",
+      "Duration": 0.0002894,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsInvalidPayload(\"Dog​Name\")",
+      "Status": "Passed",
+      "Duration": 0.0003645,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.GuestNameRejectsUnpairedSurrogatesWithoutTestArgumentEncoding",
+      "Status": "Passed",
+      "Duration": 0.0006125,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeNormalizesWithoutChangingItsMeaning(\"  abcd23  \",\"ABCD23\")",
+      "Status": "Passed",
+      "Duration": 0.0007081,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeNormalizesWithoutChangingItsMeaning(\"EFGH4567\",\"EFGH4567\")",
+      "Status": "Passed",
+      "Duration": 0.0003156,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(null)",
+      "Status": "Passed",
+      "Duration": 0.0004349,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABCDE\")",
+      "Status": "Passed",
+      "Duration": 0.0023575,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABCDEFGH2\")",
+      "Status": "Passed",
+      "Duration": 0.0002644,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABC I2\")",
+      "Status": "Passed",
+      "Duration": 9.55E-05,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABC012\")",
+      "Status": "Passed",
+      "Duration": 0.0002357,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABCＯ23\")",
+      "Status": "Passed",
+      "Duration": 0.0010987,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.GuestAndRoomTests.InviteCodeRejectsInvalidOrAmbiguousCharacters(\"ABC\\n23\")",
+      "Status": "Passed",
+      "Duration": 0.0002227,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.PreviewSceneTests.PreviewHasOneDriverAndValidSerializedReferences",
+      "Status": "Passed",
+      "Duration": 0.0485105,
+      "Message": null,
+      "StackTrace": null
+    }
+  ]
+}

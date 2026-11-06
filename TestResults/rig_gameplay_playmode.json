@@ -1,0 +1,125 @@
+{
+  "status": "completed",
+  "duration": 3.41,
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "inconclusive": 0
+  },
+  "results": [
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.AcceptedJumpAnimatesAndAnAirJumpDoesNotResetIt",
+      "Status": "Passed",
+      "Duration": 0.3274841,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.FusionAuthorityWritesMovementAndActionStateWithoutCloud",
+      "Status": "Passed",
+      "Duration": 1.1834607,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.MovementDrivesRunAndBarkStopsUntilItsAnimationEnds",
+      "Status": "Passed",
+      "Duration": 0.159776,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.RemoteSnapshotStartsAnOngoingActionPartwayThrough",
+      "Status": "Passed",
+      "Duration": 0.0665073,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.RightClickBuffersBiteOnceAndMenuDiscardsIt",
+      "Status": "Passed",
+      "Duration": 0.1150903,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogGameplayAnimationTests.ToiletingCanBeCancelledAndMenuDiscardsBufferedActions",
+      "Status": "Passed",
+      "Duration": 0.1151095,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogInputTests.DisablingGameplayDiscardsMovementAndBufferedButtons",
+      "Status": "Passed",
+      "Duration": 0.0683682,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogInputTests.ExistingPcBindingsWorkAndJumpIsConsumedOnlyOnce",
+      "Status": "Passed",
+      "Duration": 0.0742222,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogInputTests.ExpiredJumpDoesNotFireAfterSimulationPause",
+      "Status": "Passed",
+      "Duration": 0.2986519,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogMotorTests.CameraYawRotatesMovementDirection",
+      "Status": "Passed",
+      "Duration": 0.025583,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogMotorTests.DiagonalMovementIsNormalizedAndRunningIsFaster",
+      "Status": "Passed",
+      "Duration": 0.0240148,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogMotorTests.FallingOutOfArenaRestoresSpawnAndClearsVelocity",
+      "Status": "Passed",
+      "Duration": 0.0241215,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.DogMotorTests.JumpHasBoundedApexRejectsAirJumpAndLands",
+      "Status": "Passed",
+      "Duration": 0.0339854,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionPreflightTests.InvalidRequestsCreateNoRunnerAndCanLeaveAndRetry",
+      "Status": "Passed",
+      "Duration": 0.1336721,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.FusionPreflightTests.RuntimeRunnerRegistersShutdownAndCanLeaveAndRetry",
+      "Status": "Passed",
+      "Duration": 0.150281,
+      "Message": null,
+      "StackTrace": null
+    },
+    {
+      "FullName": "DogSimulator.Tests.PreviewFlowTests.MenuValidatesNameStartsLocalDriverAndResetsWithoutNetwork",
+      "Status": "Passed",
+      "Duration": 0.4460291,
+      "Message": null,
+      "StackTrace": null
+    }
+  ]
+}

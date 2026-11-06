@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: PhotoDog
+  m_Controller: {fileID: 9100000, guid: 11266a3838e678f45b5a44075c60aa18, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 488c9b8c8c5c1954d86dc29e92ad59bc, type: 2}
+    m_OverrideClip: {fileID: 3174040829792328343, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: 9206414114875716403, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: 9206414114875716403, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: -5459823135956259010, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: -5459823135956259010, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: -912943737142245397, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: -912943737142245397, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: 703554057445363033, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: 703554057445363033, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: -257211748266066376, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: -257211748266066376, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
+  - m_OriginalClip: {fileID: 3466330957565697689, guid: 24cf9f8bde2bc0c42b38e13eaa87dc3d, type: 3}
+    m_OverrideClip: {fileID: 3466330957565697689, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}

@@ -1,0 +1,8 @@
+{
+  "name": "DogSimulator.EditModeTests",
+  "references": ["DogSimulator.Runtime", "DogSimulator.Editor", "DogSimulator.Fusion", "Fusion.Unity", "Photon.Realtime", "Unity.InputSystem", "Unity.ugui", "Unity.TextMeshPro"],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll", "Fusion.Common.dll", "Fusion.Log.dll", "Fusion.Realtime.dll", "Fusion.Runtime.dll", "Fusion.Sockets.dll"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}

@@ -1,0 +1,28 @@
+{
+  "low_poly": {
+    "vertices": 1530,
+    "triangles": 3048,
+    "polygons": 2947,
+    "materials": 1,
+    "texture_size": 1024,
+    "dimensions_m": [
+      0.4845,
+      1.2765,
+      1.1709
+    ],
+    "rigged": false
+  },
+  "realistic_low_vertex": {
+    "vertices": 6010,
+    "triangles": 12008,
+    "polygons": 10122,
+    "materials": 1,
+    "texture_size": 2048,
+    "dimensions_m": [
+      0.4845,
+      1.2743,
+      1.1695
+    ],
+    "rigged": false
+  }
+}

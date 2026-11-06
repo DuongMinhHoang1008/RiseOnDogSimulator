@@ -1,0 +1,36 @@
+{
+  "low_poly": {
+    "blend_vertices": 1530,
+    "triangles": 3048,
+    "fbx_roundtrip": "PASS",
+    "glb_roundtrip": "PASS",
+    "packed_textures": "PASS",
+    "finite_geometry": "PASS",
+    "UVs": "PASS",
+    "static_mesh": true,
+    "face_not_recessed": "PASS",
+    "facial_depth_y_m": {
+      "mouth": -0.58527,
+      "chin": -0.57593,
+      "cheek_l": -0.56392,
+      "cheek_r": -0.56273
+    }
+  },
+  "realistic_low_vertex": {
+    "blend_vertices": 6010,
+    "triangles": 12008,
+    "fbx_roundtrip": "PASS",
+    "glb_roundtrip": "PASS",
+    "packed_textures": "PASS",
+    "finite_geometry": "PASS",
+    "UVs": "PASS",
+    "static_mesh": true,
+    "face_not_recessed": "PASS",
+    "facial_depth_y_m": {
+      "mouth": -0.5858,
+      "chin": -0.57738,
+      "cheek_l": -0.56396,
+      "cheek_r": -0.56349
+    }
+  }
+}
