@@ -6,9 +6,13 @@ namespace DogSimulator.Player
     public sealed class DogAnimationDriver : MonoBehaviour
     {
         public const string Controls = "WASD Move | Shift Run | Space Jump | Mouse Camera | Esc Menu\nLeft Click Pick Up/Throw | E Drop | R Reset Yard | F Bark | Right Click Bite | G Poop | H Pee";
+        public const float PoopCooldownSeconds = 20f;
+        public const float PeeCooldownSeconds = 10f;
         [SerializeField] private DogAnimationConfig config;
         [SerializeField] private DogVisualPresenter visual;
         private DogMotor motor;
+        public float PoopCooldown { get; private set; }
+        public float PeeCooldown { get; private set; }
         public DogAction CurrentAction { get; private set; }
         public int Sequence { get; private set; }
         public float RemainingSeconds { get; private set; }
@@ -23,6 +27,8 @@ namespace DogSimulator.Player
         public void Simulate(DogInputReader input, float yaw, float deltaTime, bool knockedDown = false)
         {
             if (motor == null || input == null || config == null || deltaTime <= 0) return;
+            PoopCooldown = Mathf.Max(0, PoopCooldown - deltaTime);
+            PeeCooldown = Mathf.Max(0, PeeCooldown - deltaTime);
             RemainingSeconds = Mathf.Max(0, RemainingSeconds - deltaTime);
             if (CurrentAction != DogAction.None && CurrentAction != DogAction.Jump && RemainingSeconds <= 0) ClearAction();
             if (!input.GameplayEnabled) ClearAction();
@@ -38,6 +44,8 @@ namespace DogSimulator.Player
             var moving = input.Move.sqrMagnitude > .01f;
             if ((jump && motor.IsGrounded) || (moving && (CurrentAction == DogAction.Poop || CurrentAction == DogAction.Pee))) ClearAction();
             if (requested != DogAction.None && CurrentAction == DogAction.None && motor.IsGrounded
+                && (requested != DogAction.Poop || PoopCooldown <= 0)
+                && (requested != DogAction.Pee || PeeCooldown <= 0)
                 && (!moving || (requested != DogAction.Poop && requested != DogAction.Pee))) Begin(requested);
             var locked = CurrentAction != DogAction.None && CurrentAction != DogAction.Jump;
             motor.Simulate(locked ? Vector2.zero : input.Move, input.Sprint, jump, yaw, deltaTime);
@@ -48,6 +56,8 @@ namespace DogSimulator.Player
 
         private void Begin(DogAction action)
         {
+            if (action == DogAction.Poop) PoopCooldown = PoopCooldownSeconds;
+            if (action == DogAction.Pee) PeeCooldown = PeeCooldownSeconds;
             CurrentAction = action;RemainingSeconds = config.Duration(action);
             unchecked { Sequence++; }
         }

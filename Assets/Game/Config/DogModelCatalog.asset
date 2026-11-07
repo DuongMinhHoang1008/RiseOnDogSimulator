@@ -22,6 +22,8 @@ MonoBehaviour:
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    supportsCustomFace: 0
+    faceLayoutVersion: 0
   - modelId: 1001
     displayName: Photo Dog
     visualPrefab: {fileID: 919132149155446097, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
@@ -30,6 +32,8 @@ MonoBehaviour:
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    supportsCustomFace: 0
+    faceLayoutVersion: 0
   - modelId: 1002
     displayName: Shiba Face
     visualPrefab: {fileID: 919132149155446097, guid: e10986386598aac4880315e8658e2137, type: 3}
@@ -38,3 +42,15 @@ MonoBehaviour:
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    supportsCustomFace: 0
+    faceLayoutVersion: 0
+  - modelId: 1101
+    displayName: Blank Face Dog
+    visualPrefab: {fileID: 8689223503430754587, guid: de39fae12fc1ae341895a3458bc6890d, type: 3}
+    animationController: {fileID: 22100000, guid: 3200457d4b63475488adbb09e84e1b32, type: 2}
+    localPosition: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+    mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    supportsCustomFace: 1
+    faceLayoutVersion: 1

@@ -1,6 +1,8 @@
-# Implementation status — 2026-11-06
+# Implementation status — 2026-11-07
 
 ## Current acceptance and next work
+
+**Update 07/11/2026:** M3-A/M3-B (ngoạm, đồ vật, sân nhỏ và chồng chó) đã được người dùng cho phép lập biên bản nghiệm thu sau chuỗi playtest/sửa lỗi. Bản hiện tại còn có throw/drop tách biệt, inertia ba chiều, damping vật, đệm nhún, spawn tách vị trí, cho phép trùng model, relative support anchor, ping/tick HUD và player knockback/knockdown. Prototype súng đã bị loại bỏ. WebGL clipboard bridge cho itch.io đã được thêm nhưng cần xác nhận trên build upload mới. Xem [M3-A/M3-B acceptance và chuẩn bị M3-C](M3_AB_ACCEPTANCE_2026-11-07.md). Bước triển khai tiếp theo là một NPC Master-authoritative patrol/chase/punch có 3 HP; ragdoll mang được và xe vẫn để sau.
 
 **Update 06/11/2026:** [M1.1–M2 acceptance review](M1_1_M2_ACCEPTANCE_2026-11-06.md) records delivered work separately from unverified fixes. The final two-model animation patch still needs runtime confirmation; the failed PlayMode timing assertion is not waived. The historical M2 XML files referenced in the implementation note are no longer present in `Temp/` at this review. No new tests or builds were run for this documentation update.
 

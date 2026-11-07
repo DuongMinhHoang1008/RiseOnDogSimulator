@@ -1,3 +1,4 @@
+using DogSimulator.CustomDogFace;
 using DogSimulator.Player;
 using DogSimulator.UI;
 using TMPro;
@@ -22,13 +23,28 @@ namespace DogSimulator.Networking
         [SerializeField] private UnityEngine.UI.Button resumeButton;
         [SerializeField] private UnityEngine.UI.Button leaveButton;
         [SerializeField] private UnityEngine.UI.Button copyButton;
+        [SerializeField] private UnityEngine.UI.Button editFaceButton;
+        [SerializeField] private DogFaceEditorController faceEditor;
         private bool playing;
         private float nextHudUpdate;
         private bool suppressModelChange;
+        private bool useFrontEnd;
         private const string ModelPreferenceKey = "DogSimulator.DogModelId";
 
         private void Awake()
         {
+            // Older generated preview scenes still use the diagnostic UI.
+            if (faceEditor != null && selectionPreview != null && session.ModelCatalog != null)
+            {
+                // The selection camera driver lives under this panel and remains active.
+                var legacyMenu = menu.AddComponent<CanvasGroup>();
+                legacyMenu.alpha = 0;
+                legacyMenu.interactable = legacyMenu.blocksRaycasts = false;
+                hud.SetActive(false);
+                useFrontEnd = true;
+                gameObject.AddComponent<DogFrontEnd>().Bind(session, selectionPreview, GetComponent<FpsHud>());
+                return;
+            }
             nickname.richText = roomCode.richText = false;
             foreach (var text in GetComponentsInChildren<TMP_Text>(true))
             {
@@ -44,6 +60,13 @@ namespace DogSimulator.Networking
             leaveButton.onClick.AddListener(Leave);
             copyButton.onClick.AddListener(CopyCode);
             modelDropdown.onValueChanged.AddListener(OnModelChanged);
+            if (editFaceButton != null) editFaceButton.onClick.AddListener(OpenFaceEditor);
+            if (faceEditor != null)
+            {
+                faceEditor.Applied += OnFaceApplied;
+                faceEditor.DefaultRequested += OnDefaultFace;
+                faceEditor.Closed += OnFaceEditorClosed;
+            }
             session.Changed += OnSessionChanged;
             Pause();
             OnSessionChanged();
@@ -91,6 +114,7 @@ namespace DogSimulator.Networking
             PlayerPrefs.SetInt(ModelPreferenceKey, modelId);
             PlayerPrefs.Save();
             selectionPreview?.ShowModel(modelId);
+            RefreshFaceButton();
             if (!session.IsConnected) return;
             var result = await session.SelectModelAsync(modelId);
             if (result == ModelSelectionResult.Approved) return;
@@ -114,15 +138,49 @@ namespace DogSimulator.Networking
             copyButton.interactable = session.IsConnected;
             leaveButton.interactable = session.IsConnected || session.State == SessionState.Connecting;
             modelDropdown.interactable = idle || session.IsConnected;
+            RefreshFaceButton();
             if (session.IsConnected) roomCode.text = session.RoomCode;
             selectionPreview?.SetVisible(true);
+            if (session.HasAvatar && (faceEditor == null || !faceEditor.IsOpen)) Resume();
+            else Pause();
+        }
+
+        private void RefreshFaceButton()
+        {
+            if (editFaceButton == null) return;
+            editFaceButton.interactable = session.ModelCatalog != null
+                && session.ModelCatalog.TryGet(SelectedModelId(), out var entry) && entry.SupportsCustomFace;
+        }
+
+        private void OpenFaceEditor()
+        {
+            if (faceEditor == null || session.ModelCatalog == null
+                || !session.ModelCatalog.TryGet(SelectedModelId(), out var entry) || !entry.SupportsCustomFace) return;
+            Pause();
+            faceEditor.Open(session.IsConnected);
+        }
+
+        private void OnFaceApplied(byte[] jpeg)
+        {
+            selectionPreview?.ApplyFaceJpeg(jpeg);
+            if (session.LocalPlayer != null) session.LocalPlayer.PublishCustomFace(jpeg);
+        }
+
+        private void OnDefaultFace()
+        {
+            selectionPreview?.ResetFaceToDefault();
+            session.LocalPlayer?.PublishDefaultFace();
+        }
+
+        private void OnFaceEditorClosed()
+        {
             if (session.HasAvatar) Resume();
             else Pause();
         }
 
         private void Resume()
         {
-            if (!session.HasAvatar) return;
+            if (!session.HasAvatar || (faceEditor != null && faceEditor.IsOpen)) return;
             playing = true;
             session.SetControlsEnabled(true);
             menu.SetActive(false);
@@ -153,6 +211,7 @@ namespace DogSimulator.Networking
 
         private void Update()
         {
+            if (useFrontEnd) return;
             if (playing && (Keyboard.current?.escapeKey.wasPressedThisFrame == true
                 || Cursor.lockState != CursorLockMode.Locked)) Pause();
             if (!session.HasAvatar || Time.unscaledTime < nextHudUpdate) return;
@@ -166,6 +225,7 @@ namespace DogSimulator.Networking
 
         private void OnDestroy()
         {
+            if (useFrontEnd) return;
             if (session != null) { session.Changed -= OnSessionChanged; session.SetControlsEnabled(false); }
             createButton.onClick.RemoveListener(Create);
             joinButton.onClick.RemoveListener(Join);
@@ -173,6 +233,13 @@ namespace DogSimulator.Networking
             leaveButton.onClick.RemoveListener(Leave);
             copyButton.onClick.RemoveListener(CopyCode);
             if (modelDropdown != null) modelDropdown.onValueChanged.RemoveListener(OnModelChanged);
+            if (editFaceButton != null) editFaceButton.onClick.RemoveListener(OpenFaceEditor);
+            if (faceEditor != null)
+            {
+                faceEditor.Applied -= OnFaceApplied;
+                faceEditor.DefaultRequested -= OnDefaultFace;
+                faceEditor.Closed -= OnFaceEditorClosed;
+            }
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }

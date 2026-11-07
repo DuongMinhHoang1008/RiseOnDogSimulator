@@ -106,6 +106,7 @@ namespace Photon.Realtime
             if (go == null)
             {
                 go = new GameObject(nameof(ConnectionHandler));
+                go.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
                 if (Application.isPlaying)
                 {
                     DontDestroyOnLoad(go);
@@ -156,6 +157,11 @@ namespace Photon.Realtime
         {
             if (this.Client == null)
             {
+                if (gameObject.name == nameof(ConnectionHandler) && gameObject.scene.name == "DontDestroyOnLoad")
+                {
+                    Destroy(this);
+                    return;
+                }
                 UnityEngine.Debug.LogError("A ConnectionHandler should not be put into a scene. It is created by RealtimeClient.ConnectUsingSettings().", this);
             }
         }

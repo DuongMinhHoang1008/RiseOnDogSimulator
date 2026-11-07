@@ -1,8 +1,10 @@
 # Thiết kế bước tiếp theo — Sandbox chó có tương tác
 
-**Ngày:** 06/11/2026, Asia/Saigon.  
-**Trạng thái:** thiết kế và khuyến nghị, chưa triển khai gameplay trong lượt này.  
+**Ngày:** 06/11/2026, cập nhật 07/11/2026, Asia/Saigon.
+**Trạng thái:** M3-A và M3-B đã triển khai/nghiệm thu về phạm vi; bước kế tiếp là M3-C NPC.
 **Đầu vào:** [rà soát M1.1–M2](M1_1_M2_ACCEPTANCE_2026-11-06.md), bảy đề xuất của người dùng và nền Fusion Shared/Web hiện có.
+
+> Cập nhật tiến độ: xem [biên bản nghiệm thu M3-A/M3-B](M3_AB_ACCEPTANCE_2026-11-07.md). Implementation hiện đã có carry/throw/drop, vật có damping, sân nhỏ, đệm nhún, chồng chó bằng relative support anchor, player knockback/knockdown, ping HUD và WebGL clipboard bridge. NPC, ragdoll và xe vẫn chưa triển khai.
 
 ## 1. Nhận xét công tâm
 
@@ -52,7 +54,7 @@ Asset ngoài chỉ được shortlist/import sau khi blockout cho thấy kích t
 
 ## 4. Ngoạm đồ: cơ chế trung tâm
 
-- Đề xuất **E** nhìn gần mục tiêu để ngoạm, E lần nữa để thả; chuột phải vẫn cắn. **Q** ném khi đang ngoạm, đưa vào sau khi pickup/drop ổn. HUD chỉ hiện hành động hiện có.
+- Điều khiển đã chốt: **chuột trái** nhặt vật khi tay không và ném khi đang cầm; **E** thả nhẹ; chuột phải vẫn cắn. HUD chỉ hiện hành động hiện có.
 - Một chó giữ một vật, một vật có một carrier. Không check kích thước/khối lượng để từ chối: thùng to hoặc người gục vẫn được ngoạm, không tự thu nhỏ mesh.
 - Mỗi vật có điểm ngoạm và offset riêng; attach vào `MouthAnchor`. Camera không bị mesh vật lớn che kín; tạm giảm collider vật đang cầm để tránh đẩy chủ/người khác bay khỏi map.
 - “Không quan trọng kích thước” là quy tắc cho **mọi đối tượng có capability carryable**, không mặc định nhấc nền, tòa nhà, NPC đang tỉnh hoặc xe đang có người lái. Xương, bóng, thùng và NPC gục là danh sách đầu.
@@ -134,9 +136,9 @@ Các budget là giới hạn **prototype đề xuất**, không phải capacity 
 | Đợt | Đầu ra cụ thể | Gate trước khi đi tiếp |
 | --- | --- | --- |
 | G0 — Chốt nền | Xác minh animation 3 model, room/input và test thất bại; lưu bằng chứng | Checklist lỗi chặn ở biên bản nghiệm thu có kết quả |
-| M3-A — Ngoạm và sân thử | Blockout một sân; 1 xương, 1 bóng, 3 thùng; pickup/drop, reset; bóng lăn/đẩy | Hai client tranh cùng đồ: một carrier; carrier rời không mất đồ; thả không kẹt tường; có tình huống chơi lại |
-| M3-B — Chồng chó | Support hai tầng, bục co-op; sau đó thử ba | Người dưới đi/xoay/nhảy/rời phòng, người trên tách an toàn; không rung tăng dần hoặc bay vô hạn |
-| M3-C — NPC phản công | 1 NPC patrol/chase/punch, HP, bite/knockback | Hai client đồng ý HP và thời điểm gục; đòn không nhân đôi; né được đấm và không stun-lock |
+| M3-A — Ngoạm và sân thử — **đã triển khai/nghiệm thu phạm vi** | Blockout một sân; 1 xương, 1 bóng, 3 thùng; pickup/drop/throw, reset; bóng lăn/đẩy; đệm nhún; vật ném gây knockdown | Còn lưu regression Web hai client và XML mới theo checklist nghiệm thu |
+| M3-B — Chồng chó — **đã triển khai/nghiệm thu phạm vi** | Relative support anchor tối đa ba tầng; player push/knockdown; spawn tách vị trí; cho phép trùng model | Còn lưu regression Web hai client cho support leave/jump/rotation và knockdown remote |
+| M3-C — NPC phản công — **bước kế tiếp** | 1 NPC patrol/chase/punch, HP, bite/knockback; downed placeholder chưa ragdoll | Hai client đồng ý HP và thời điểm gục; đòn không nhân đôi; né được đấm và không stun-lock |
 | M3-D — Ragdoll + ngoạm người | Prototype root + ragdoll local, carry/drop/recovery | Ngoạm cả người không bị giới hạn kích thước; late join/handoff đúng state; xác nhận mức ragdoll đủ vui hay cần spike joint-sync |
 | M4-A — Hoàn thiện sân | Art asset đã chọn, 2 NPC nếu budget cho phép, mục tiêu tùy chọn | 10 phút chơi không cạn trò ngay; người chơi tìm được đồ/NPC/bục; Web load/performance không tụt ngoài budget |
 | M4-B — Xe experimental | 1 xe/ghế, enter/drive/exit/reset | Hai người tranh ghế, driver rời, lật/thoát sát tường, handoff; độ trễ lái chấp nhận được qua playtest |

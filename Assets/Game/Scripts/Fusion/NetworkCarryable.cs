@@ -15,6 +15,7 @@ namespace DogSimulator.Networking
         [SerializeField, Min(0)] private float rollingAngularDamping = 1.8f;
         [SerializeField, Min(0)] private float nonRollingLinearDamping = 1.1f;
         [SerializeField, Min(0)] private float nonRollingAngularDamping = 2.5f;
+        [SerializeField, Min(0)] private float lifetimeSeconds;
         [Networked] public NetworkId CarrierId { get; private set; }
         [Networked] public Vector3 ResetPosition { get; private set; }
         [Networked] public Quaternion ResetRotation { get; private set; }
@@ -24,6 +25,8 @@ namespace DogSimulator.Networking
         [Networked] public int ImpactRequestId { get; private set; }
         [Networked] public NetworkBool WasThrown { get; private set; }
         [Networked] public NetworkBool ImpactForcesKnockdown { get; private set; }
+        [Networked] private TickTimer DespawnAt { get; set; }
+        [Networked] private float PausedLifetime { get; set; }
         private Rigidbody body;
         private Collider[] colliders;
         private Vector3 previousMouthPosition;
@@ -33,9 +36,12 @@ namespace DogSimulator.Networking
         private readonly Dictionary<NetworkId, float> impactCooldowns = new();
         private NetworkId recentCarrierId;
         private float recentCarrierGraceUntil;
+        private Pose lastFreePose;
 
         public static IReadOnlyList<NetworkCarryable> Active => ActiveItems;
         public bool IsCarried => CarrierId.IsValid;
+        public bool IsTemporary => lifetimeSeconds > 0;
+        internal Pose WorldSavePose => IsCarried ? lastFreePose : new Pose(transform.position, transform.rotation);
 
         private void Awake()
         {
@@ -46,21 +52,29 @@ namespace DogSimulator.Networking
         public override void Spawned()
         {
             if (!ActiveItems.Contains(this)) ActiveItems.Add(this);
+            if (Object.HasStateAuthority && IsTemporary) DespawnAt = TickTimer.CreateFromSeconds(Runner, lifetimeSeconds);
             ConfigurePhysics();
             previousFreePosition = transform.position;
         }
 
-        public void InitializeResetPose(Vector3 position, Quaternion rotation)
+        public void InitializeResetPose(Vector3 position, Quaternion rotation, bool moveToResetPose = true)
         {
             if (!Object.HasStateAuthority) return;
             ResetPosition = position;
             ResetRotation = rotation;
-            transform.SetPositionAndRotation(position, rotation);
+            if (moveToResetPose) transform.SetPositionAndRotation(position, rotation);
         }
 
         public bool TryPickup(NetworkDogPlayer carrier)
         {
             if (!Object.HasStateAuthority || IsCarried || carrier == null || carrier.Object == null) return false;
+            if (IsTemporary)
+            {
+                if (DespawnAt.Expired(Runner)) return false;
+                PausedLifetime = DespawnAt.RemainingTime(Runner) ?? lifetimeSeconds;
+                DespawnAt = TickTimer.None;
+            }
+            lastFreePose = new Pose(transform.position, transform.rotation);
             CarrierId = carrier.Object.Id;
             WasThrown = false;
             previousMouthPosition = carrier.MouthAnchor.position;
@@ -93,6 +107,7 @@ namespace DogSimulator.Networking
             recentCarrierId = carrier.Object.Id;
             recentCarrierGraceUntil = Time.unscaledTime + .45f;
             CarrierId = NetworkId.None;
+            ResumeLifetime();
             WasThrown = thrown;
             transform.SetPositionAndRotation(position, transform.rotation);
             Revision++;
@@ -108,17 +123,23 @@ namespace DogSimulator.Networking
         {
             if (!Object.HasStateAuthority) return;
             CarrierId = NetworkId.None;
+            ResumeLifetime();
             WasThrown = false;
             hasMouthSample = false;
             transform.SetPositionAndRotation(ResetPosition, ResetRotation);
-            body.linearVelocity = body.angularVelocity = Vector3.zero;
             Revision++;
             ConfigurePhysics();
+            body.linearVelocity = body.angularVelocity = Vector3.zero;
         }
 
         public override void FixedUpdateNetwork()
         {
             if (!Object.HasStateAuthority) return;
+            if (IsTemporary && !IsCarried && DespawnAt.Expired(Runner))
+            {
+                Runner.Despawn(Object);
+                return;
+            }
             if (IsCarried)
             {
                 if (!Runner.TryFindObject(CarrierId, out var carrierObject)
@@ -137,6 +158,13 @@ namespace DogSimulator.Networking
             }
             else DetectPlayerImpacts();
             if (transform.position.y < -8) ResetToSpawn();
+        }
+
+        private void ResumeLifetime()
+        {
+            if (!IsTemporary || DespawnAt.IsRunning) return;
+            DespawnAt = TickTimer.CreateFromSeconds(Runner, Mathf.Max(Runner.DeltaTime, PausedLifetime));
+            PausedLifetime = 0;
         }
 
         private void DetectPlayerImpacts()

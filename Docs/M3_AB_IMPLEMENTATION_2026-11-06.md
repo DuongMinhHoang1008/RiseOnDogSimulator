@@ -1,7 +1,9 @@
 # M3-A/M3-B — triển khai sandbox tương tác
 
-**Ngày:** 06/11/2026, Asia/Saigon  
+**Ngày:** 06/11/2026, Asia/Saigon
 **Phạm vi:** ngoạm + đồ vật + sân nhỏ, sau đó chồng chó. NPC, ragdoll và xe chưa triển khai.
+
+> **Ghi chú lịch sử:** tài liệu này ghi trạng thái triển khai trung gian ngày 06/11. Mapping input, cơ chế support và các bản vá gameplay cuối đã thay đổi; dùng [biên bản nghiệm thu ngày 07/11](M3_AB_ACCEPTANCE_2026-11-07.md) làm trạng thái hiện hành.
 
 ## Đã triển khai
 

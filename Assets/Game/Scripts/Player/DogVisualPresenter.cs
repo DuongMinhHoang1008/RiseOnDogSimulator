@@ -1,3 +1,5 @@
+using System;
+using DogSimulator.CustomDogFace;
 using UnityEngine;
 
 namespace DogSimulator.Player
@@ -23,6 +25,9 @@ namespace DogSimulator.Player
         private const float FallDuration = .35f;
         public Animator Animator => animator;
         public DogAction RenderedAction => renderedAction;
+        public int RenderedModelId => renderedModelId;
+        public DogFaceSurface FaceSurface { get; private set; }
+        public event Func<bool> VisualChanged;
 
         public void PresentKnockdown(bool knockedDown, Vector3 direction)
         {
@@ -72,10 +77,8 @@ namespace DogSimulator.Player
             {
                 if (defaultVisual != null) defaultVisual.SetActive(false);
                 var parent = visualRoot != null ? visualRoot : transform;
-                instantiatedVisual = Instantiate(entry.VisualPrefab, parent, false);
+                instantiatedVisual = InstantiateVisual(entry, parent);
                 instantiatedVisual.name = $"DogModel_{entry.ModelId}_{entry.DisplayName}";
-                instantiatedVisual.transform.SetLocalPositionAndRotation(entry.LocalPosition, entry.LocalRotation);
-                instantiatedVisual.transform.localScale = entry.LocalScale;
                 SetLayerRecursively(instantiatedVisual.transform, parent.gameObject.layer);
                 animator = instantiatedVisual.GetComponentInChildren<Animator>(true);
                 if (animator == null) animator = instantiatedVisual.AddComponent<Animator>();
@@ -86,6 +89,23 @@ namespace DogSimulator.Player
                 animator.Update(0f);
             }
             if (mouthAnchor != null) mouthAnchor.localPosition = entry.MouthAnchor;
+            FaceSurface = instantiatedVisual != null
+                ? instantiatedVisual.GetComponentInChildren<DogFaceSurface>(true)
+                : defaultVisual != null ? defaultVisual.GetComponentInChildren<DogFaceSurface>(true) : null;
+            VisualChanged?.Invoke();
+        }
+
+        internal static GameObject InstantiateVisual(DogModelCatalog.Entry entry, Transform parent)
+        {
+            var visual = Instantiate(entry.VisualPrefab, parent, false);
+            visual.transform.SetLocalPositionAndRotation(entry.LocalPosition, entry.LocalRotation);
+            visual.transform.localScale = entry.LocalScale;
+            foreach (var behaviour in visual.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (behaviour != null && behaviour.GetType().FullName == "ReferenceDog.Animation.ReferenceDogAnimationPreview")
+                    behaviour.enabled = false;
+            }
+            return visual;
         }
 
         private static void SetLayerRecursively(Transform root, int layer)

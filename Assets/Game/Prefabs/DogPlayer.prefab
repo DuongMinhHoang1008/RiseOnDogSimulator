@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 3078042536807746989}
   - component: {fileID: 6226825848814572869}
   - component: {fileID: 4168768142527474727}
+  - component: {fileID: 2559243716469328908}
   m_Layer: 2
   m_Name: DogPlayer
   m_TagString: Untagged
@@ -172,12 +173,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: DogSimulator.Fusion::DogSimulator.Networking.NetworkDogPlayer
   nameLabel: {fileID: 7700470648064625198}
   modelCatalog: {fileID: 11400000, guid: 5d5af499768a4ca42917751b7c716431, type: 2}
+  peeMaterial: {fileID: 2100000, guid: 44cba3757b73d364a8dbd80e777b7bd8, type: 2}
   carryRange: 2.2
+  minimumKnockdownSeconds: 0.8
+  knockdownSettleSpeed: 0.45
   _Nickname:
     _length: 0
     _data:
       Data: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   _DogModelId: 0
+  _FaceRevision: 0
+  _FaceModelId: 0
+  _FaceLayoutVersion: 0
+  _FaceKind: 0
+  _FaceByteLength: 0
+  _FaceSha256:
+    _length: 0
+    _data:
+      Data: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   _AnimationSpeed: 0
   _AnimationGrounded:
     RawValue: 0
@@ -187,6 +200,18 @@ MonoBehaviour:
     Raw: 0
   _InteractionKind: 0
   _InteractionRequestId: 0
+  _MovementVelocity: {x: 0, y: 0, z: 0}
+  _StackSupportId:
+    Raw: 0
+  _StackLocalPosition: {x: 0, y: 0, z: 0}
+  _StackLocalRotation: {x: 0, y: 0, z: 0, w: 0}
+  _KnockdownActive:
+    RawValue: 0
+  _KnockdownDirection: {x: 0, y: 0, z: 0}
+  _ImpactTargetId:
+    Raw: 0
+  _ImpactImpulse: {x: 0, y: 0, z: 0}
+  _ImpactRequestId: 0
 --- !u!114 &6226825848814572869
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -218,6 +243,19 @@ MonoBehaviour:
   visualRoot: {fileID: 5599652803481936628}
   defaultVisual: {fileID: 2859639222139877726}
   mouthAnchor: {fileID: 3601316391697934448}
+--- !u!114 &2559243716469328908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068515275313795447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8cfae6732a5e614093b46388a6999f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.CustomDogFace.DogFaceAppearance
+  presenter: {fileID: 4168768142527474727}
 --- !u!1 &4801603083382149068
 GameObject:
   m_ObjectHideFlags: 0

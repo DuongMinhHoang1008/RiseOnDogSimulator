@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DogSimulator.Editor;
+using DogSimulator.CustomDogFace;
 using DogSimulator.Networking;
 using DogSimulator.Player;
 using DogSimulator.UI;
@@ -23,10 +24,13 @@ namespace DogSimulator.Tests
             var catalog = AssetDatabase.LoadAssetAtPath<DogModelCatalog>(M2PreviewUpgrade.CatalogPath);
             Assert.That(catalog, Is.Not.Null);
             Assert.That(catalog.Validate(out var error), Is.True, error);
-            Assert.That(catalog.Entries.Select(entry => entry.ModelId), Is.EquivalentTo(new[] { 1, 1001, 1002 }));
+            Assert.That(catalog.Entries.Select(entry => entry.ModelId),
+                Is.EquivalentTo(new[] { 1, 1001, 1002, CustomDogFaceConstants.CustomFaceModelId }));
             Assert.That(catalog.Entries.Select(entry => entry.ModelId).Distinct().Count(), Is.EqualTo(catalog.Entries.Count));
             Assert.That(catalog.Entries.Single(entry => entry.ModelId == 1001).VisualPrefab.name, Is.EqualTo("Dog_Rigged"));
             Assert.That(catalog.Entries.Single(entry => entry.ModelId == 1002).VisualPrefab.name, Is.EqualTo("Dog_Rigged"));
+            Assert.That(catalog.Entries.Single(entry => entry.ModelId == CustomDogFaceConstants.CustomFaceModelId)
+                .VisualPrefab.name, Is.EqualTo("BlankFaceDog"));
             Assert.That(catalog.Resolve(987654).ModelId, Is.EqualTo(catalog.FallbackModelId));
         }
 

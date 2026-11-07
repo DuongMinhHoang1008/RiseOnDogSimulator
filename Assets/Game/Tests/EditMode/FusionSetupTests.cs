@@ -23,7 +23,7 @@ namespace DogSimulator.Tests
 
         [TestCase(false)]
         [TestCase(true)]
-        public void MatchmakingIsSharedPrivateAndExplicitAboutCreation(bool create)
+        public void MatchmakingStartsUnlistedAndExplicitAboutCreation(bool create)
         {
             var source = new FusionAppSettings { AppIdFusion = Guid.NewGuid().ToString(), FixedRegion = "eu", AppVersion = "other" };
             using (var cancellation = new CancellationTokenSource())
@@ -33,6 +33,7 @@ namespace DogSimulator.Tests
                 Assert.That(args.SessionName, Is.EqualTo("ABCD23"));
                 Assert.That(args.EnableClientSessionCreation, Is.EqualTo(create));
                 Assert.That(args.IsVisible, Is.False);
+                Assert.That(args.IsOpen, Is.EqualTo(!create));
                 Assert.That(args.PlayerCount, Is.EqualTo(8));
                 Assert.That(args.CustomPhotonAppSettings.FixedRegion, Is.EqualTo(config.Region));
                 Assert.That(args.CustomPhotonAppSettings.AppVersion, Is.EqualTo(config.GameVersion));

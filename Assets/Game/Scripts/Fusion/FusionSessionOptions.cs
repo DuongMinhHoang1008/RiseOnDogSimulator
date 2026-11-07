@@ -11,6 +11,7 @@ namespace DogSimulator.Networking
     {
         public const string CreationKey = "creation";
         public const string VersionKey = "build";
+        public const string WorldBuild = "office-world-slots-v2";
 
         public static StartGameArgs Build(NetworkConfig config, FusionAppSettings settings,
             string code, bool create, string creationId, CancellationToken cancellation)
@@ -21,19 +22,15 @@ namespace DogSimulator.Networking
             if (!RoomCodeService.TryNormalize(code, out var normalized)) throw new ArgumentException("Invalid room code.");
             if (create && string.IsNullOrEmpty(creationId)) throw new ArgumentException("Missing creation ID.");
 
-            var copy = settings.GetCopy();
-            copy.FixedRegion = config.Region;
-            copy.AppVersion = config.GameVersion;
-            copy.emptyRoomTtl = 0;
             return new StartGameArgs
             {
                 GameMode = GameMode.Shared,
                 SessionName = normalized,
                 EnableClientSessionCreation = create,
                 IsVisible = false,
-                IsOpen = true,
+                IsOpen = !create,
                 PlayerCount = config.MaxPlayers,
-                CustomPhotonAppSettings = copy,
+                CustomPhotonAppSettings = CopySettings(config, settings),
                 UseCachedRegions = false,
                 StartGameCancellationToken = cancellation,
                 SessionProperties = create ? new Dictionary<string, SessionProperty>
@@ -42,6 +39,15 @@ namespace DogSimulator.Networking
                     [VersionKey] = config.GameVersion
                 } : null
             };
+        }
+
+        internal static FusionAppSettings CopySettings(NetworkConfig config, FusionAppSettings settings)
+        {
+            var copy = settings.GetCopy();
+            copy.FixedRegion = config.Region;
+            copy.AppVersion = config.GameVersion;
+            copy.emptyRoomTtl = 0;
+            return copy;
         }
 
         // Shared StartGame can join an existing named room. A fresh nonce distinguishes

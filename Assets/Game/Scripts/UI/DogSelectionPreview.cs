@@ -1,3 +1,4 @@
+using DogSimulator.CustomDogFace;
 using DogSimulator.Player;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,10 +15,15 @@ namespace DogSimulator.UI
         [SerializeField, Min(0f)] private float rotationDegreesPerSecond = 16f;
         private RenderTexture renderTexture;
         private GameObject previewModel;
+        private bool floating;
+        private bool menuPresentation;
+        private Vector2 viewportRestPosition;
         private int displayedModelId = int.MinValue;
         public int DisplayedModelId => displayedModelId;
         public bool HasRenderedModel => previewModel != null;
         public bool RenderTextureReady => renderTexture != null && renderTexture.IsCreated();
+        public DogFaceSurface FaceSurface => previewModel != null
+            ? previewModel.GetComponentInChildren<DogFaceSurface>(true) : null;
 
         private void Awake()
         {
@@ -38,12 +44,14 @@ namespace DogSimulator.UI
             var entry = catalog.Resolve(modelId);
             if (entry?.VisualPrefab == null) return;
             displayedModelId = modelId;
-            if (previewModel != null) Destroy(previewModel);
+            if (previewModel != null)
+            {
+                previewModel.SetActive(false);
+                Destroy(previewModel);
+            }
             previewAnchor.localRotation = Quaternion.identity;
-            previewModel = Instantiate(entry.VisualPrefab, previewAnchor, false);
+            previewModel = DogVisualPresenter.InstantiateVisual(entry, previewAnchor);
             previewModel.name = $"Preview_{entry.ModelId}_{entry.DisplayName}";
-            previewModel.transform.SetLocalPositionAndRotation(entry.LocalPosition, entry.LocalRotation);
-            previewModel.transform.localScale = entry.LocalScale;
             PrepareHierarchy(previewModel.transform);
             var animator = previewModel.GetComponentInChildren<Animator>(true);
             if (animator == null) animator = previewModel.AddComponent<Animator>();
@@ -53,8 +61,42 @@ namespace DogSimulator.UI
             animator.Rebind();
             animator.Play("Idle", 0, 0f);
             animator.Update(0f);
+            if (menuPresentation) Rotate(145f);
             FrameModel();
         }
+
+        public void PresentIn(RawImage destination, bool floatModel = false)
+        {
+            if (viewport != null && viewport != destination) viewport.gameObject.SetActive(false);
+            viewport = destination;
+            viewport.texture = renderTexture;
+            viewportRestPosition = viewport.rectTransform.anchoredPosition;
+            menuPresentation = true;
+            floating = floatModel;
+            previewCamera.backgroundColor = Color.clear;
+            Rotate(145f);
+            if (previewModel != null) FrameModel();
+            SetVisible(true);
+        }
+
+        public void FocusFace()
+        {
+            if (FaceSurface?.TargetRenderer == null) return;
+            Rotate(180);
+            FrameBounds(FaceSurface.TargetRenderer.bounds, 1.28f);
+        }
+
+        public bool ApplyFaceJpeg(byte[] jpeg)
+            => FaceSurface != null && FaceSurface.TryApplyJpeg(jpeg);
+
+        public void ResetRotation() { if (previewAnchor != null) previewAnchor.localRotation = Quaternion.identity; }
+
+        public void Rotate(float degrees)
+        {
+            if (previewAnchor != null) previewAnchor.localRotation = Quaternion.Euler(0, degrees, 0);
+        }
+
+        public void ResetFaceToDefault() => FaceSurface?.ResetToDefault();
 
         public void SetVisible(bool visible)
         {
@@ -64,7 +106,14 @@ namespace DogSimulator.UI
 
         private void Update()
         {
-            if (previewModel != null && previewCamera.enabled)
+            if (previewModel == null || !previewCamera.enabled) return;
+            if (floating)
+            {
+                var wave = Time.unscaledTime * 2.2f;
+                viewport.rectTransform.anchoredPosition = viewportRestPosition + Vector2.up * Mathf.Sin(wave) * 14f;
+                Rotate(145f + Mathf.Sin(wave * .65f) * 13f);
+            }
+            else if (!menuPresentation)
                 previewAnchor.Rotate(0f, rotationDegreesPerSecond * Time.unscaledDeltaTime, 0f, Space.Self);
         }
 
@@ -86,10 +135,15 @@ namespace DogSimulator.UI
             if (renderers.Length == 0) return;
             var bounds = renderers[0].bounds;
             for (var i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            FrameBounds(bounds, menuPresentation ? 1.02f : 1.25f);
+        }
+
+        private void FrameBounds(Bounds bounds, float padding)
+        {
             var center = bounds.center;
             var radius = Mathf.Max(.25f, bounds.extents.magnitude);
             var halfFov = previewCamera.fieldOfView * .5f * Mathf.Deg2Rad;
-            var distance = radius / Mathf.Tan(halfFov) * 1.25f;
+            var distance = radius / Mathf.Tan(halfFov) * padding;
             var direction = new Vector3(0f, .18f, -1f).normalized;
             previewCamera.transform.position = center + direction * distance;
             previewCamera.transform.LookAt(center + Vector3.up * bounds.extents.y * .06f);

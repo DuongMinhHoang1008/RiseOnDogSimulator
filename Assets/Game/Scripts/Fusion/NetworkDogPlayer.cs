@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DogSimulator.CustomDogFace;
 using DogSimulator.Player;
 using Fusion;
 using TMPro;
@@ -11,14 +12,28 @@ namespace DogSimulator.Networking
     public sealed class NetworkDogPlayer : NetworkBehaviour
     {
         private static readonly List<NetworkDogPlayer> ActivePlayers = new();
+        private static readonly int PeeState = Animator.StringToHash(nameof(DogAction.Pee));
+        // The shared rig holds the raised leg from 20% to 76% of the clip.
+        private const float PeeEmissionStart = .22f;
+        private const float PeeEmissionEnd = .64f;
+        private const float PeeLegLowerStart = .76f;
+        private static readonly Vector3 PeeOutletOffset = new(-.15f, -.157f, .129f);
+        private static readonly Quaternion PeeAim = Quaternion.LookRotation(new Vector3(-1f, -.23f, .24f));
         [SerializeField] private TMP_Text nameLabel;
         [SerializeField] private DogModelCatalog modelCatalog;
+        [SerializeField] private Material peeMaterial;
         [SerializeField, Min(.5f)] private float carryRange = 2.2f;
         [SerializeField, Min(.1f)] private float minimumKnockdownSeconds = .8f;
         [SerializeField, Min(0)] private float knockdownSettleSpeed = .45f;
         [Networked] public NetworkString<_32> Nickname { get; private set; }
         // Model 1 is the supplied rigged visual. Selection/reservations remain separate work.
         [Networked] public int DogModelId { get; private set; }
+        [Networked] public int FaceRevision { get; private set; }
+        [Networked] public int FaceModelId { get; private set; }
+        [Networked] public int FaceLayoutVersion { get; private set; }
+        [Networked] public DogFaceKind FaceKind { get; private set; }
+        [Networked] public int FaceByteLength { get; private set; }
+        [Networked] public NetworkString<_64> FaceSha256 { get; private set; }
         [Networked] public float AnimationSpeed { get; private set; }
         [Networked] public NetworkBool AnimationGrounded { get; private set; }
         [Networked] public DogAction AnimationAction { get; private set; }
@@ -46,10 +61,31 @@ namespace DogSimulator.Networking
         private Transform mouthAnchor;
         private float nextBodyImpactTime;
         private readonly Dictionary<NetworkId, int> processedImpacts = new();
+        private DogFaceAppearance faceAppearance;
+        private byte[] ownerFaceJpeg;
+        private ParticleSystem peeStream;
+        private Transform peePelvis;
 
         public static IReadOnlyList<NetworkDogPlayer> Active => ActivePlayers;
         public Transform MouthAnchor => mouthAnchor != null ? mouthAnchor : transform;
         public float CarryRange => carryRange;
+        internal float PoopCooldown => animations != null ? animations.PoopCooldown : 0;
+        internal float PeeCooldown => animations != null ? animations.PeeCooldown : 0;
+        public DogFaceAppearance FaceAppearance => faceAppearance;
+        public byte[] OwnerFaceJpeg => Object != null && Object.HasStateAuthority ? ownerFaceJpeg : null;
+
+        [Rpc(RpcSources.Proxies, RpcTargets.StateAuthority, TickAligned = false)]
+        internal void RPC_RequestFace(int revision, RpcInfo info = default)
+        {
+            if (revision == FaceRevision && ownerFaceJpeg != null && info.Source.IsRealPlayer
+                && Runner.IsPlayerCommitted(info.Source)) RPC_ReceiveFace(info.Source, revision, ownerFaceJpeg);
+        }
+
+        [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies, Channel = RpcChannel.ReliableLargeData, TickAligned = false)]
+        internal void RPC_ReceiveFace([RpcTarget] PlayerRef target, int revision, byte[] jpeg)
+        {
+            Runner.GetComponent<CustomDogFaceNetworkService>()?.ReceiveFace(this, revision, jpeg);
+        }
 
         public bool IntersectsBodySweep(Vector3 start, Vector3 end, float sweepRadius)
         {
@@ -108,6 +144,7 @@ namespace DogSimulator.Networking
             motor = GetComponent<DogMotor>();
             input = GetComponent<DogInputReader>();
             animations = GetComponent<DogAnimationDriver>();
+            faceAppearance = GetComponent<DogFaceAppearance>();
             motor.ControllerImpact += OnControllerImpact;
             motor.HardLanding += OnHardLanding;
             mouthAnchor = transform.Find("MouthAnchor");
@@ -135,6 +172,52 @@ namespace DogSimulator.Networking
         {
             if (!Object.HasStateAuthority || modelCatalog == null || !modelCatalog.IsValidModelId(modelId)) return;
             DogModelId = modelId;
+            if (FaceRevision > 0) PublishCurrentFaceForModel();
+        }
+
+        public bool PublishCustomFace(byte[] jpeg)
+        {
+            if (!Object.HasStateAuthority || modelCatalog == null
+                || !modelCatalog.TryGet(DogModelId, out var entry) || !entry.SupportsCustomFace
+                || !DogFaceImageValidator.IsValidFaceJpeg(jpeg, out _)) return false;
+            ownerFaceJpeg = (byte[])jpeg.Clone();
+            FaceRevision = NextFaceRevision();
+            FaceModelId = DogModelId;
+            FaceLayoutVersion = entry.FaceLayoutVersion;
+            FaceKind = DogFaceKind.CustomJpeg;
+            FaceByteLength = ownerFaceJpeg.Length;
+            FaceSha256 = DogFaceImageValidator.Sha256Hex(ownerFaceJpeg);
+            faceAppearance?.ApplyCustom(FaceModelId, FaceLayoutVersion, ownerFaceJpeg);
+            return true;
+        }
+
+        public void PublishDefaultFace()
+        {
+            if (!Object.HasStateAuthority) return;
+            ownerFaceJpeg = null;
+            FaceRevision = NextFaceRevision();
+            FaceModelId = DogModelId;
+            FaceLayoutVersion = modelCatalog != null && modelCatalog.TryGet(DogModelId, out var entry)
+                ? entry.FaceLayoutVersion : 0;
+            FaceKind = DogFaceKind.Default;
+            FaceByteLength = 0;
+            FaceSha256 = default;
+            faceAppearance?.ApplyDefault(FaceModelId, FaceLayoutVersion);
+        }
+
+        public void PublishCurrentFaceForModel()
+        {
+            if (!Object.HasStateAuthority || modelCatalog == null
+                || !modelCatalog.TryGet(DogModelId, out var entry) || !entry.SupportsCustomFace)
+            { PublishDefaultFace(); return; }
+            if (ownerFaceJpeg != null) PublishCustomFace(ownerFaceJpeg);
+            else PublishDefaultFace();
+        }
+
+        private int NextFaceRevision()
+        {
+            var next = unchecked(FaceRevision + 1);
+            return next <= 0 ? 1 : next;
         }
 
         public void SetControlsEnabled(bool value)
@@ -167,34 +250,39 @@ namespace DogSimulator.Networking
 
         private void SubmitPrimaryCarryInteraction()
         {
-            for (var i = 0; i < NetworkCarryable.Active.Count; i++)
-            {
-                var carried = NetworkCarryable.Active[i];
-                if (carried != null && carried.Runner == Runner && carried.CarrierId == Object.Id)
-                { SubmitInteraction(carried.Object.Id, SandboxInteractionKind.Throw); return; }
-            }
+            var target = GetCarryTarget(out var carrying);
+            if (target != null)
+                SubmitInteraction(target.Object.Id, carrying ? SandboxInteractionKind.Throw : SandboxInteractionKind.Pickup);
+        }
+
+        private void SubmitDropInteraction()
+        {
+            var target = GetCarryTarget(out var carrying);
+            if (carrying) SubmitInteraction(target.Object.Id, SandboxInteractionKind.Drop);
+        }
+
+        internal NetworkCarryable GetCarryTarget(out bool carrying)
+        {
+            carrying = false;
+            if (Object == null || !Object.IsValid) return null;
             NetworkCarryable nearest = null;
             var best = carryRange * carryRange;
             for (var i = 0; i < NetworkCarryable.Active.Count; i++)
             {
                 var candidate = NetworkCarryable.Active[i];
-                if (candidate == null || candidate.Runner != Runner || candidate.IsCarried) continue;
+                if (candidate == null || candidate.Object == null || !candidate.Object.IsValid || candidate.Runner != Runner) continue;
+                if (candidate.CarrierId == Object.Id)
+                {
+                    carrying = true;
+                    return candidate;
+                }
+                if (candidate.IsCarried) continue;
                 var distance = (candidate.transform.position - MouthAnchor.position).sqrMagnitude;
                 if (distance >= best) continue;
                 best = distance;
                 nearest = candidate;
             }
-            if (nearest != null) SubmitInteraction(nearest.Object.Id, SandboxInteractionKind.Pickup);
-        }
-
-        private void SubmitDropInteraction()
-        {
-            for (var i = 0; i < NetworkCarryable.Active.Count; i++)
-            {
-                var carried = NetworkCarryable.Active[i];
-                if (carried != null && carried.Runner == Runner && carried.CarrierId == Object.Id)
-                { SubmitInteraction(carried.Object.Id, SandboxInteractionKind.Drop); return; }
-            }
+            return nearest;
         }
 
         private void SubmitInteraction(NetworkId target, SandboxInteractionKind kind)
@@ -210,6 +298,9 @@ namespace DogSimulator.Networking
             return MouthAnchor.position + transform.forward * .75f + Vector3.up * .2f;
         }
 
+        public const string NamesPreferenceKey = "DogSimulator.ShowPlayerNames";
+        public static bool ShowNameplates { get; set; } = true;
+
         public override void Render()
         {
             ApplyStackPresentation();
@@ -217,15 +308,75 @@ namespace DogSimulator.Networking
             {
                 renderedModelId = DogModelId;
                 animations.ApplyModel(modelCatalog, DogModelId);
+                peePelvis = animations.Visual?.Animator?.transform.Find("Dog_Rig/Root/Pelvis");
             }
             animations.PresentSnapshot(AnimationSpeed, AnimationGrounded, AnimationAction,
                 AnimationSequence, Mathf.Max(0, AnimationUntil.RemainingTime(Runner) ?? 0));
             animations.PresentKnockdown(IsKnockedDown(), KnockdownDirection);
             if (nameLabel == null) return;
+            nameLabel.enabled = ShowNameplates;
+            if (!ShowNameplates) return;
             var name = Nickname.ToString();
             if (renderedName != name) { nameLabel.text = name; renderedName = name; }
             var camera = Camera.main;
             if (camera != null) nameLabel.transform.rotation = camera.transform.rotation;
+        }
+
+        private void LateUpdate()
+        {
+            // Sample after Animator evaluation so the stream follows the pose displayed on this peer.
+            var animator = animations?.Visual?.Animator;
+            var phase = -1f;
+            if (Object != null && Object.IsValid && AnimationAction == DogAction.Pee
+                && peePelvis != null && animator != null && animator.isActiveAndEnabled && !animator.IsInTransition(0))
+            {
+                var state = animator.GetCurrentAnimatorStateInfo(0);
+                if (state.shortNameHash == PeeState) phase = state.normalizedTime;
+            }
+
+            if (phase < PeeEmissionStart || phase >= PeeLegLowerStart)
+            {
+                if (peeStream != null && (!peeStream.isStopped || peeStream.particleCount > 0))
+                    peeStream.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+                return;
+            }
+            if (phase >= PeeEmissionEnd)
+            {
+                if (peeStream != null && peeStream.isEmitting)
+                    peeStream.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+                return;
+            }
+
+            if (peeMaterial == null) return;
+            if (peeStream == null) CreatePeeStream();
+            var outlet = peePelvis.position + animator.transform.TransformVector(PeeOutletOffset);
+            peeStream.transform.SetPositionAndRotation(outlet, animator.transform.rotation * PeeAim);
+            if (!peeStream.isEmitting) peeStream.Play();
+        }
+
+        private void CreatePeeStream()
+        {
+            var effect = new GameObject("Pee Stream");
+            effect.SetActive(false);
+            effect.transform.SetParent(transform, false);
+            peeStream = effect.AddComponent<ParticleSystem>();
+            var main = peeStream.main;
+            main.playOnAwake = false;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startLifetime = .38f;
+            main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 1.9f);
+            main.startSize = new ParticleSystem.MinMaxCurve(.025f, .043f);
+            main.gravityModifier = .65f;
+            main.maxParticles = 48;
+            var emission = peeStream.emission;
+            emission.rateOverTime = 75;
+            var shape = peeStream.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 4;
+            shape.radius = .009f;
+            peeStream.GetComponent<ParticleSystemRenderer>().sharedMaterial = peeMaterial;
+            effect.SetActive(true);
         }
 
         private void CaptureStackState()
@@ -333,6 +484,7 @@ namespace DogSimulator.Networking
         private void OnHardLanding(float impactSpeed)
         {
             if (impactSpeed < 9f) return;
+            followCamera?.ShakeOnLanding(impactSpeed);
             KnockdownDirection = transform.right;
             KnockdownActive = true;
             KnockdownUntil = TickTimer.CreateFromSeconds(Runner, minimumKnockdownSeconds);

@@ -18,6 +18,8 @@ namespace DogSimulator.Player
             [SerializeField] private Vector3 localEulerAngles;
             [SerializeField] private Vector3 localScale = Vector3.one;
             [SerializeField] private Vector3 mouthAnchor = new Vector3(0, .8f, .6f);
+            [SerializeField] private bool supportsCustomFace;
+            [SerializeField, Min(0)] private int faceLayoutVersion;
 
             public int ModelId => modelId;
             public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? $"Dog {modelId}" : displayName;
@@ -27,6 +29,9 @@ namespace DogSimulator.Player
             public Quaternion LocalRotation => Quaternion.Euler(localEulerAngles);
             public Vector3 LocalScale => localScale == Vector3.zero ? Vector3.one : localScale;
             public Vector3 MouthAnchor => mouthAnchor;
+            public bool SupportsCustomFace => supportsCustomFace && faceLayoutVersion > 0;
+            public bool CustomFaceRequested => supportsCustomFace;
+            public int FaceLayoutVersion => SupportsCustomFace ? faceLayoutVersion : 0;
         }
 
         [SerializeField, Min(1)] private int fallbackModelId = 1;
@@ -80,6 +85,11 @@ namespace DogSimulator.Player
                 if (!ids.Add(entry.ModelId))
                 {
                     error = $"Duplicate Dog ModelId {entry.ModelId}.";
+                    return false;
+                }
+                if (entry.CustomFaceRequested && entry.FaceLayoutVersion <= 0)
+                {
+                    error = $"Custom-face model {entry.ModelId} needs a positive layout version.";
                     return false;
                 }
             }

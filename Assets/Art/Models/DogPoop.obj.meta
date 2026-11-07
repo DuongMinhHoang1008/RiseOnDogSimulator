@@ -1,0 +1,25 @@
+fileFormatVersion: 2
+guid: 35783f899b414a758c58dc32c1bfcab3
+ModelImporter:
+  serializedVersion: 24300
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DogPoop
+    second: {fileID: 2100000, guid: 57f83431465a463aa3ac5a73b215b158, type: 2}
+  materials:
+    materialImportMode: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  meshes:
+    globalScale: 1
+    useFileUnits: 1
+    useFileScale: 1
+    meshCompression: 0
+  tangentSpace:
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 0
+  animationType: 0

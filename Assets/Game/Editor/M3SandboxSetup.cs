@@ -55,9 +55,9 @@ namespace DogSimulator.Editor
             {
                 var serialized = new SerializedObject(config);
                 var version = serialized.FindProperty("gameVersion");
-                if (version != null && version.stringValue != "office-m3-knockback-v2")
+                if (version != null && version.stringValue != FusionSessionOptions.WorldBuild)
                 {
-                    version.stringValue = "office-m3-knockback-v2";
+                    version.stringValue = FusionSessionOptions.WorldBuild;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     changed = true;
                 }
@@ -140,6 +140,7 @@ namespace DogSimulator.Editor
             networkObject.Flags &= ~(NetworkObjectFlags.DestroyWhenStateAuthorityLeaves | NetworkObjectFlags.AllowStateAuthorityOverride);
             var registry = root.AddComponent<SandboxInteractionRegistry>();
             var serialized = new SerializedObject(registry);
+            serialized.FindProperty("poopPrefab").objectReferenceValue = DogWasteSetup.GetOrCreatePoopPrefab();
             var prefabArray = serialized.FindProperty("carryablePrefabs");
             var positions = serialized.FindProperty("spawnPositions");
             var spawnPoints = new[]
@@ -192,6 +193,9 @@ namespace DogSimulator.Editor
                 capsule.radius = .32f;
                 var gun = root.transform.Find("KnockbackGun");
                 if (gun != null) Object.DestroyImmediate(gun.gameObject);
+                var player = new SerializedObject(root.GetComponent<NetworkDogPlayer>());
+                player.FindProperty("peeMaterial").objectReferenceValue = DogWasteSetup.GetOrCreatePeeMaterial();
+                player.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, FusionPreviewSetup.PrefabPath);
             }
             finally { PrefabUtility.UnloadPrefabContents(root); }
@@ -237,7 +241,7 @@ namespace DogSimulator.Editor
         {
             var config = AssetDatabase.LoadAssetAtPath<NetworkConfig>(FusionPreviewSetup.ConfigPath);
             var serialized = new SerializedObject(config);
-            serialized.FindProperty("gameVersion").stringValue = "office-m3-knockback-v2";
+            serialized.FindProperty("gameVersion").stringValue = FusionSessionOptions.WorldBuild;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
