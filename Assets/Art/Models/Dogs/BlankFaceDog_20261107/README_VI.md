@@ -34,3 +34,8 @@ Model có 27 xương và các clip `Idle`, `Run`, `Jump`, `Bark`, `Poop`, `Pee`,
 - Unity Console sạch sau khi tạo prefab và chạy runtime texture probe.
 
 Để dựng lại toàn bộ tích hợp sau khi thay FBX, chạy menu `Tools > Dog Simulator > Custom Face > Apply Custom Face with BlankFaceDog`. Chỉ đăng ký lại riêng model bằng menu `Register Blank Face Art Model`.
+
+## Tài liệu tái sử dụng
+
+- Chuyển model chó có sẵn: `../GUIDE_CONVERT_EXISTING_DOG_TO_CUSTOM_FACE_VI.md`.
+- Dựng model cùng chuẩn từ ảnh mới: `../GUIDE_CREATE_CUSTOM_FACE_DOG_FROM_NEW_PHOTO_VI.md`.

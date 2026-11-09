@@ -29,7 +29,7 @@ namespace DogSimulator.Networking
 
         public bool Submit(int modelId, int requestId)
         {
-            if (Object == null || !Object.IsValid || !Object.HasStateAuthority || requestId <= 0) return false;
+            if (Object == null || !Object.IsValid || !Object.HasInputAuthority || requestId <= 0) return false;
             RequestedModelId = modelId;
             RequestId = requestId;
             return true;

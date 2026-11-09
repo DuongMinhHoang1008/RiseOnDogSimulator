@@ -160,13 +160,15 @@ namespace DogSimulator.Tests
             while (!start.IsCompleted && Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(start.IsCompleted, Is.True);Assert.That(start.Result.Ok, Is.True);
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefabs/DogPlayer.prefab").GetComponent<NetworkObject>();
-            var avatar = trialRunner.Spawn(prefab,new Vector3(402,.1f,400),Quaternion.identity);
+            var spawnPosition = new Vector3(402, .1f, 400);
+            var avatar = trialRunner.Spawn(prefab, spawnPosition, Quaternion.identity);
             var player = avatar.GetComponent<NetworkDogPlayer>();
             trialCamera = new GameObject("Single runner follow camera");
             player.InitializeOwner("RigTest",trialCamera.AddComponent<DogCamera>());player.SetControlsEnabled(true);
             Assert.That(avatar.HasStateAuthority, Is.True);
             yield return Keys(Key.W,Key.LeftShift);
-            yield return new WaitForSeconds(.15f);
+            deadline = Time.realtimeSinceStartup + 1;
+            while (player.AnimationSpeed <= .8f && Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(player.AnimationSpeed, Is.GreaterThan(.8f));
             yield return Keys(Key.F);
             deadline = Time.realtimeSinceStartup + 1;
@@ -175,6 +177,8 @@ namespace DogSimulator.Tests
             Assert.That(player.AnimationSequence, Is.GreaterThan(0));
             Assert.That(player.AnimationUntil.IsRunning, Is.True);
             Assert.That(avatar.GetComponent<DogVisualPresenter>().RenderedAction, Is.EqualTo(DogAction.Bark));
+            avatar.GetComponent<DogMotor>().Respawn();
+            Assert.That(avatar.transform.position, Is.EqualTo(spawnPosition));
         }
     }
 }

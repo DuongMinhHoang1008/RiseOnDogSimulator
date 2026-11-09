@@ -18,7 +18,8 @@ namespace DogSimulator.Editor
         public const string AnimationConfigPath = "Assets/Game/Config/DogAnimationConfig.asset";
         public const string ControllerPath = "Assets/Game/Animation/DogGameplay.controller";
         public const string JumpPath = "Assets/Game/Animation/Jump_Gameplay.anim";
-        public const string ModelPath = "Assets/Art/ReferenceDog/realistic_low_vertex/Dog_Rigged.fbx";
+        public const string VisualPrefabPath = "Assets/Art/Models/Dogs/RealisticDogCustomFace_20261108/Unity/RealisticDogCustomFace.prefab";
+        public const string VisualControllerPath = "Assets/Game/Animation/Catalog/RealisticDogCustomFace.overrideController";
         private const string ClipsPath = "Assets/Art/ReferenceDog/low_poly/Dog_Rigged.fbx";
 
         [MenuItem("Tools/Dog Simulator/Assign Rigged Dog to Gameplay")]
@@ -80,16 +81,14 @@ namespace DogSimulator.Editor
                 settings = ScriptableObject.CreateInstance<DogAnimationConfig>();
                 AssetDatabase.CreateAsset(settings, AnimationConfigPath);
             }
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
-            if (controller == null) controller = CreateController(settings);
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            if (model == null) throw new InvalidOperationException("Missing supplied rigged dog: " + ModelPath);
+            if (AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath) == null) CreateController(settings);
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(VisualPrefabPath);
+            if (model == null) throw new InvalidOperationException("Missing supplied rigged dog: " + VisualPrefabPath);
             foreach (var child in root.transform.Cast<Transform>().ToArray())
                 if (child.name.StartsWith("DogPlaceholder", StringComparison.Ordinal) || child.name == "DogVisual") Object.DestroyImmediate(child.gameObject);
             var visualRoot = new GameObject("DogVisual");visualRoot.transform.SetParent(root.transform, false);
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(model, visualRoot.transform);
             var animator = instance.GetComponent<Animator>();
-            animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
             foreach (var renderer in instance.GetComponentsInChildren<SkinnedMeshRenderer>()) renderer.updateWhenOffscreen = false;
@@ -97,11 +96,14 @@ namespace DogSimulator.Editor
             var presenter = root.GetComponent<DogVisualPresenter>() ?? root.AddComponent<DogVisualPresenter>();
             var driver = root.GetComponent<DogAnimationDriver>() ?? root.AddComponent<DogAnimationDriver>();
             Reference(presenter, "animator", animator);Reference(presenter, "config", settings);
+            Reference(presenter, "visualRoot", visualRoot.transform);
+            Reference(presenter, "defaultVisual", instance);
             Reference(driver, "visual", presenter);Reference(driver, "config", settings);
             var capsule = root.GetComponent<CharacterController>();
             capsule.height = 1.1f;capsule.radius = .30f;capsule.center = new Vector3(0, .55f, 0);
             var mouth = root.transform.Find("MouthAnchor");
             if (mouth != null) mouth.localPosition = new Vector3(0, .80f, .60f);
+            Reference(presenter, "mouthAnchor", mouth);
             var nickname = root.transform.Find("Nickname");
             if (nickname != null) nickname.localPosition = new Vector3(0, 1.40f, 0);
         }

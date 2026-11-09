@@ -16,6 +16,7 @@ namespace DogSimulator.Networking
         [SerializeField, Min(0)] private float nonRollingLinearDamping = 1.1f;
         [SerializeField, Min(0)] private float nonRollingAngularDamping = 2.5f;
         [SerializeField, Min(0)] private float lifetimeSeconds;
+        [SerializeField] private BoxCollider dropClearance;
         [Networked] public NetworkId CarrierId { get; private set; }
         [Networked] public Vector3 ResetPosition { get; private set; }
         [Networked] public Quaternion ResetRotation { get; private set; }
@@ -37,11 +38,26 @@ namespace DogSimulator.Networking
         private NetworkId recentCarrierId;
         private float recentCarrierGraceUntil;
         private Pose lastFreePose;
+        private readonly Collider[] dropOverlaps = new Collider[16];
+        private NetworkCityPedestrian pedestrianHit;
 
         public static IReadOnlyList<NetworkCarryable> Active => ActiveItems;
         public bool IsCarried => CarrierId.IsValid;
         public bool IsTemporary => lifetimeSeconds > 0;
         internal Pose WorldSavePose => IsCarried ? lastFreePose : new Pose(transform.position, transform.rotation);
+
+        public static void ReleaseCarriedBy(NetworkRunner runner, PlayerRef player)
+        {
+            for (var i = ActiveItems.Count - 1; i >= 0; i--)
+            {
+                var item = ActiveItems[i];
+                if (item == null || item.Runner != runner || !item.Object.HasStateAuthority || !item.IsCarried
+                    || !runner.TryFindObject(item.CarrierId, out var carrierObject)
+                    || carrierObject.InputAuthority != player) continue;
+                if (!carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier) || !item.TryDrop(carrier))
+                    item.ResetToSpawn();
+            }
+        }
 
         private void Awake()
         {
@@ -77,6 +93,7 @@ namespace DogSimulator.Networking
             lastFreePose = new Pose(transform.position, transform.rotation);
             CarrierId = carrier.Object.Id;
             WasThrown = false;
+            pedestrianHit = null;
             previousMouthPosition = carrier.MouthAnchor.position;
             carriedWorldVelocity = carrier.MovementVelocity;
             hasMouthSample = true;
@@ -104,12 +121,26 @@ namespace DogSimulator.Networking
         private bool Release(NetworkDogPlayer carrier, Vector3 releaseVelocity, bool thrown)
         {
             var position = carrier.FindDropPosition(this);
+            var rotation = transform.rotation;
+            if (dropClearance != null)
+            {
+                if (!TryDropPose(carrier, position, out position))
+                {
+                    if (thrown) return false;
+                    if (!IsDropPoseClear(lastFreePose.position, lastFreePose.rotation)) return false;
+                    position = lastFreePose.position;
+                    rotation = lastFreePose.rotation;
+                }
+            }
             recentCarrierId = carrier.Object.Id;
             recentCarrierGraceUntil = Time.unscaledTime + .45f;
             CarrierId = NetworkId.None;
             ResumeLifetime();
             WasThrown = thrown;
-            transform.SetPositionAndRotation(position, transform.rotation);
+            transform.SetPositionAndRotation(position, rotation);
+            body.position = position;
+            body.rotation = rotation;
+            previousFreePosition = position;
             Revision++;
             ConfigurePhysics();
             body.WakeUp();
@@ -119,14 +150,39 @@ namespace DogSimulator.Networking
             return true;
         }
 
+        private bool TryDropPose(NetworkDogPlayer carrier, Vector3 preferred, out Vector3 position)
+        {
+            position = preferred;
+            if (IsDropPoseClear(position, transform.rotation)) return true;
+            var distance = dropClearance.size.magnitude * .5f + .55f;
+            var side = carrier.transform.right * distance;
+            position = carrier.transform.position + side + Vector3.up * .65f;
+            if (IsDropPoseClear(position, transform.rotation)) return true;
+            position -= 2 * side;
+            return IsDropPoseClear(position, transform.rotation);
+        }
+
+        private bool IsDropPoseClear(Vector3 position, Quaternion rotation)
+        {
+            var center = position + rotation * dropClearance.center;
+            var half = dropClearance.size * .49f;
+            var count = Physics.OverlapBoxNonAlloc(center, half, dropOverlaps, rotation,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            return count == 0;
+        }
+
         public void ResetToSpawn()
         {
             if (!Object.HasStateAuthority) return;
             CarrierId = NetworkId.None;
             ResumeLifetime();
             WasThrown = false;
+            pedestrianHit = null;
             hasMouthSample = false;
             transform.SetPositionAndRotation(ResetPosition, ResetRotation);
+            body.position = ResetPosition;
+            body.rotation = ResetRotation;
+            previousFreePosition = ResetPosition;
             Revision++;
             ConfigurePhysics();
             body.linearVelocity = body.angularVelocity = Vector3.zero;
@@ -135,6 +191,11 @@ namespace DogSimulator.Networking
         public override void FixedUpdateNetwork()
         {
             if (!Object.HasStateAuthority) return;
+            if (pedestrianHit != null)
+            {
+                pedestrianHit.HitByThrownProp();
+                pedestrianHit = null;
+            }
             if (IsTemporary && !IsCarried && DespawnAt.Expired(Runner))
             {
                 Runner.Despawn(Object);
@@ -160,6 +221,14 @@ namespace DogSimulator.Networking
             if (transform.position.y < -8) ResetToSpawn();
         }
 
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (Object == null || !Object.IsValid || !Object.HasStateAuthority || !WasThrown || IsCarried
+                || collision.relativeVelocity.sqrMagnitude < 4f) return;
+            var npc = collision.collider.GetComponentInParent<NetworkCityPedestrian>();
+            if (npc != null && npc.Runner == Runner) pedestrianHit = npc;
+        }
+
         private void ResumeLifetime()
         {
             if (!IsTemporary || DespawnAt.IsRunning) return;
@@ -179,7 +248,8 @@ namespace DogSimulator.Networking
             var radius = Mathf.Max(.35f, colliders[0].bounds.extents.magnitude);
             foreach (var player in NetworkDogPlayer.Active)
             {
-                if (player == null || player.Runner != Runner || player.Object == null) continue;
+                if (player == null || player.Runner != Runner || player.Object == null || !player.Object.IsValid
+                    || player.SeatedVehicleId.IsValid) continue;
                 if (player.Object.Id == recentCarrierId && Time.unscaledTime < recentCarrierGraceUntil) continue;
                 if (impactCooldowns.TryGetValue(player.Object.Id, out var until) && Time.unscaledTime < until) continue;
                 if (!player.IntersectsBodySweep(start, end, radius)) continue;

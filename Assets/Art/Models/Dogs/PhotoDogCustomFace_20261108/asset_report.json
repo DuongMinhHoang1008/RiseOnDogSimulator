@@ -1,0 +1,77 @@
+{
+  "source": "Assets/Art/Models/Dogs/PhotoDog_20261105/model/Dog_Rigged.fbx",
+  "blender": "5.2.3 LTS",
+  "coordinates": {
+    "forward": "-Y",
+    "up": "+Z",
+    "horizontal": "+X",
+    "unit_scale": 1
+  },
+  "source_mesh": {
+    "vertices": 9100,
+    "triangles": 18048
+  },
+  "source_materials": [
+    "Dog_Fur_and_ReferenceFace",
+    "Mouth_Interior",
+    "Tongue",
+    "Teeth",
+    "Claws"
+  ],
+  "lower_mouth_cavity_max_recess_m": 0.026,
+  "source_armature": "Dog_Rig",
+  "body": {
+    "vertices": 8865,
+    "triangles": 17482
+  },
+  "face": {
+    "vertices": 471,
+    "triangles": 802
+  },
+  "seam": {
+    "shared_vertices": 118,
+    "shared_edges": 118,
+    "max_gap_per_clip_scene_units": {
+      "Idle": 0.0,
+      "Run": 0.0,
+      "Jump": 0.0,
+      "Bark": 0.0,
+      "Poop": 0.0,
+      "Pee": 0.0,
+      "Bite": 0.0
+    }
+  },
+  "bones": 27,
+  "clips": {
+    "Idle": [
+      1.0,
+      61.0
+    ],
+    "Run": [
+      1.0,
+      25.0
+    ],
+    "Jump": [
+      1.0,
+      43.0
+    ],
+    "Bark": [
+      1.0,
+      37.0
+    ],
+    "Poop": [
+      1.0,
+      109.0
+    ],
+    "Pee": [
+      1.0,
+      97.0
+    ],
+    "Bite": [
+      1.0,
+      28.0
+    ]
+  },
+  "fps": 30,
+  "face_layout_version": 1
+}

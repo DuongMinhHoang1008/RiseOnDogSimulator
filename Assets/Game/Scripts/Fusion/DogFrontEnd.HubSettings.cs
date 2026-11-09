@@ -138,11 +138,12 @@ namespace DogSimulator.Networking
             skin.Label(At(plaque, "Title", 255, 0, 1305, 900), title, 47, Brown).fontStyle = FontStyles.Bold;
         }
 
-        private void BuildSettings()
+        private void BuildSettings(RectTransform parent)
         {
-            var root = At(stage, "Settings Popup", 0, 0, 1600, 900);
-            settings = root.gameObject.AddComponent<CanvasGroup>();
-            skin.Surface(At(root, "Backdrop", -1600, -900, 4800, 2700), null, new Color(.14f, .10f, .09f, .72f), true);
+            var popup = At(parent, "Settings Popup", 0, 0, 1600, 900);
+            settings = popup.gameObject.AddComponent<CanvasGroup>();
+            skin.Surface(At(popup, "Backdrop", 0, 0, 1600, 900), null, new Color(.14f, .10f, .09f, .72f), true);
+            var root = FitMenuFrame(popup, "Settings Frame");
             skin.Surface(At(root, "Settings Card", 244, 130, 1112, 641), skin.Paper, Color.white);
             Header(root, "Settings", 552, 83, 496, 90);
             settingsClose = skin.Button(At(root, "Close Settings", 1290, 110, 73, 73), "×", CloseSettings, true, 45);

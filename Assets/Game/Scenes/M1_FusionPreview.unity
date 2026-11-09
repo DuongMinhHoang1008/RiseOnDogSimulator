@@ -2186,6 +2186,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.UI.DogSelectionPreview
   catalog: {fileID: 11400000, guid: 5d5af499768a4ca42917751b7c716431, type: 2}
+  dogHomeSceneCatalog: {fileID: 11400000, guid: f59e17b6809d8a14590aacf2f616544f, type: 2}
   viewport: {fileID: 255241366}
   previewCamera: {fileID: 1341787058}
   previewAnchor: {fileID: 1835512594}

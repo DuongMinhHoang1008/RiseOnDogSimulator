@@ -27,7 +27,14 @@ namespace DogSimulator.Tests
             Assert.That(catalog.Entries.Select(entry => entry.ModelId),
                 Is.EquivalentTo(new[] { 1, 1001, 1002, CustomDogFaceConstants.CustomFaceModelId }));
             Assert.That(catalog.Entries.Select(entry => entry.ModelId).Distinct().Count(), Is.EqualTo(catalog.Entries.Count));
-            Assert.That(catalog.Entries.Single(entry => entry.ModelId == 1001).VisualPrefab.name, Is.EqualTo("Dog_Rigged"));
+            var photoDog = catalog.Entries.Single(entry => entry.ModelId == 1001);
+            Assert.That(photoDog.VisualPrefab.name, Is.EqualTo("PhotoDogCustomFace"));
+            Assert.That(photoDog.SupportsCustomFace, Is.True);
+            Assert.That(photoDog.FaceLayoutVersion, Is.EqualTo(CustomDogFaceConstants.LayoutVersion));
+            Assert.That(photoDog.AnimationController, Is.EqualTo(photoDog.VisualPrefab.GetComponent<Animator>().runtimeAnimatorController));
+            var photoFace = photoDog.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
+            Assert.That(photoFace, Is.Not.Null);
+            Assert.That(photoFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
             Assert.That(catalog.Entries.Single(entry => entry.ModelId == 1002).VisualPrefab.name, Is.EqualTo("Dog_Rigged"));
             Assert.That(catalog.Entries.Single(entry => entry.ModelId == CustomDogFaceConstants.CustomFaceModelId)
                 .VisualPrefab.name, Is.EqualTo("BlankFaceDog"));

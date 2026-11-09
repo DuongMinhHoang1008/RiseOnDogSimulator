@@ -41,8 +41,8 @@ namespace DogSimulator.Networking
             {
                 var request = requests[i];
                 if (request == null || request.Runner != Runner || request.Object == null || !request.Object.IsValid
-                    || request.RequestId <= 0 || !request.Object.StateAuthority.IsRealPlayer) continue;
-                var source = request.Object.StateAuthority;
+                    || request.RequestId <= 0 || !request.Object.InputAuthority.IsRealPlayer) continue;
+                var source = request.Object.InputAuthority;
                 if (Results.TryGet(source, out var previous) && previous.RequestId == request.RequestId) continue;
                 var result = ValidateAndReserve(source, request.RequestedModelId);
                 Results.Set(source, new ModelSelectionReply

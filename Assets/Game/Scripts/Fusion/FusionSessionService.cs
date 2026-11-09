@@ -13,18 +13,18 @@ namespace DogSimulator.Networking
 
     public sealed partial class FusionSessionService : MonoBehaviour
     {
+        private const float MinimumSpawnSeparation = 2.75f;
+        private const float FirstSpawnRingRadius = 4f;
+        private const float SpawnRingSpacing = 3.5f;
         [SerializeField] private NetworkConfig config;
         [SerializeField] private NetworkObject playerPrefab;
-        [SerializeField] private GameObject registryPrefab;
-        [SerializeField] private GameObject selectionRequestPrefab;
         [SerializeField] private GameObject sandboxRegistryPrefab;
         [SerializeField] private DogModelCatalog modelCatalog;
         [SerializeField] private DogCamera followCamera;
         [SerializeField] private Transform spawnPoint;
+        private SimplePolyCityWorld city;
         private NetworkRunner runner;
         private NetworkDogPlayer localPlayer;
-        private DogModelSelectionRegistry registry;
-        private DogModelSelectionRequest selectionRequest;
         private SandboxInteractionRegistry sandbox;
         private PlayerRef roomOwner;
         private CancellationTokenSource cancellation;
@@ -33,11 +33,10 @@ namespace DogSimulator.Networking
         private float deadline;
         private bool timedOut;
         private bool destroyed;
-        private int selectionRequestId;
         private string pendingNickname;
 
         public SessionState State { get; private set; }
-        public string Message { get; private set; } = "Create or join a private Shared room. Rigged dog with movement/action animations.";
+        public string Message { get; private set; } = "Create a Host room, join as Client, or play the same world offline.";
         public string RoomCode { get; private set; } = string.Empty;
         public string Region => config != null ? config.Region : string.Empty;
         public string GameVersion => config != null ? config.GameVersion : string.Empty;
@@ -54,6 +53,8 @@ namespace DogSimulator.Networking
         public int SelectedModelId { get; private set; }
         public event Action Changed;
         public NetworkDogPlayer LocalPlayer => localPlayer;
+
+        private void Awake() => city = GetComponent<SimplePolyCityWorld>();
 
         public Task CreateAsync(string nickname, int modelId, int worldSlot = 1) => Begin(nickname, modelId, null, true, false, worldSlot);
         public Task JoinAsync(string nickname, int modelId, string code) => Begin(nickname, modelId, code, false, false, 0);
@@ -78,7 +79,7 @@ namespace DogSimulator.Networking
             { SetState(SessionState.Failed, "Use a valid 6–8 character room code."); return; }
             if ((singlePlayer || create) && !WorldSaveSlots.IsValidSlot(worldSlot))
             { SetState(SessionState.Failed, "Choose world slot 1, 2 or 3."); return; }
-            if (config == null || !config.IsValid || playerPrefab == null || registryPrefab == null || selectionRequestPrefab == null
+            if (config == null || !config.IsValid || playerPrefab == null
                 || sandboxRegistryPrefab == null
                 || modelCatalog == null || !modelCatalog.Validate(out _) || !modelCatalog.IsValidModelId(modelId)
                 || followCamera == null || spawnPoint == null)
@@ -90,7 +91,8 @@ namespace DogSimulator.Networking
             cancellation = new CancellationTokenSource();
             timedOut = false;
             deadline = float.PositiveInfinity;
-            SetState(SessionState.Connecting, singlePlayer ? "Opening the yard…" : create ? "Creating room…" : "Joining room…");
+            var openingWorld = city != null ? "Opening the city…" : "Opening the yard…";
+            SetState(SessionState.Connecting, singlePlayer ? openingWorld : create ? "Creating room…" : "Joining room…");
             try
             {
                 await StopBrowsing();
@@ -104,6 +106,7 @@ namespace DogSimulator.Networking
                         : FusionSessionOptions.Build(config, settings, candidate, create, creationId, cancellation.Token);
                     pendingNickname = name;
                     CreateRunner();
+                    runner.ProvideInput = !singlePlayer;
                     args.SceneManager = runner.gameObject.AddComponent<NetworkSceneManagerDefault>();
                     // This slice keeps the already loaded static arena on each peer. No
                     // network scene objects or scene streaming; use one client per process.
@@ -130,7 +133,7 @@ namespace DogSimulator.Networking
                         continue;
                     }
                     if (!runner.SessionInfo.Properties.TryGetValue(FusionSessionOptions.VersionKey, out var version)
-                        || !version.IsString || (string)version != config.GameVersion)
+                        || !version.IsString || (string)version != FusionSessionOptions.ProtocolVersion(config))
                     {
                         await DisposeRunnerAsync();
                         SetState(SessionState.Failed, "Version mismatch. Use the same game build.");
@@ -138,27 +141,18 @@ namespace DogSimulator.Networking
                     }
 
                     RoomCode = candidate;
-                    SetState(SessionState.Connecting, "Connected. Waiting for the Master to approve your dog model…");
-                    registry = await FindOrCreateRegistryAsync(cancellation.Token);
+                    SetState(SessionState.Connecting, "Connected. Waiting for the host to spawn your dog…");
                     sandbox = await FindOrCreateSandboxRegistryAsync(cancellation.Token, worldSlot, create);
-                    roomOwner = sandbox.RoomOwner;
-                    if (!create && (sandbox.RoomClosing || !roomOwner.IsRealPlayer || !runner.IsPlayerCommitted(roomOwner)))
+                    roomOwner = create
+                        ? runner.LocalPlayer
+                        : await WaitForRoomOwnerAsync(sandbox, cancellation.Token);
+                    if (!create && sandbox.RoomClosing)
                     {
                         await DisposeRunnerAsync();
                         SetState(SessionState.Failed, OwnerLeftMessage);
                         return;
                     }
-                    var requestObject = runner.Spawn(selectionRequestPrefab);
-                    if (requestObject == null) throw new InvalidOperationException("Model selection request could not be spawned.");
-                    selectionRequest = requestObject.GetComponent<DogModelSelectionRequest>();
-                    var selection = await ReserveAsync(modelId, cancellation.Token);
-                    if (selection != ModelSelectionResult.Approved)
-                    {
-                        SetState(SessionState.Selecting,
-                            $"{DogModelSelectionRegistry.Describe(selection)} Choose another dog to continue in room {RoomCode}.");
-                        return;
-                    }
-                    SpawnLocalAvatar(modelId);
+                    await WaitForLocalAvatarAsync(modelId, cancellation.Token);
                     if (create) SetRoomAvailability(true);
                     return;
                 }
@@ -185,36 +179,22 @@ namespace DogSimulator.Networking
 
         private void CreateRunner()
         {
-            var root = new GameObject("Fusion Runner — Shared");
+            var root = new GameObject("Fusion Runner — Host Client");
             runner = root.AddComponent<NetworkRunner>();
             NetworkRunner.CloudConnectionLostCurrentMode = NetworkRunner.CloudConnectionLostMode.Disabled;
-            runner.ProvideInput = false; // Shared avatars capture their own owner input.
+            runner.ProvideInput = true;
             var events = root.AddComponent<NetworkEvents>();
             // Runtime-added components do not get serialized UnityEvent instances.
             events.OnShutdown = new NetworkEvents.ShutdownEvent();
             events.OnShutdown.AddListener(OnShutdown);
+            events.PlayerJoined = new NetworkEvents.PlayerEvent();
+            events.PlayerJoined.AddListener(OnPlayerJoined);
+            events.PlayerLeft = new NetworkEvents.PlayerEvent();
+            events.PlayerLeft.AddListener(OnPlayerLeft);
+            events.OnInput = new NetworkEvents.InputEvent();
+            events.OnInput.AddListener(OnInput);
             runner.AddCallbacks(events);
             root.AddComponent<CustomDogFaceNetworkService>().Initialize(runner);
-        }
-
-        private async Task<DogModelSelectionRegistry> FindOrCreateRegistryAsync(CancellationToken token)
-        {
-            var expires = Time.realtimeSinceStartup + config.ConnectionTimeoutSeconds;
-            while (runner != null && runner.IsRunning && Time.realtimeSinceStartup < expires)
-            {
-                token.ThrowIfCancellationRequested();
-                var candidates = FindObjectsByType<DogModelSelectionRegistry>(FindObjectsSortMode.None);
-                foreach (var candidate in candidates)
-                    if (candidate != null && candidate.Object != null && candidate.Object.IsValid && candidate.Runner == runner)
-                        return candidate;
-                if (runner.IsSharedModeMasterClient)
-                {
-                    var spawned = runner.Spawn(registryPrefab);
-                    if (spawned != null) return spawned.GetComponent<DogModelSelectionRegistry>();
-                }
-                await Task.Yield();
-            }
-            throw new TimeoutException("The model reservation registry was not available.");
         }
 
         private async Task<SandboxInteractionRegistry> FindOrCreateSandboxRegistryAsync(CancellationToken token,
@@ -233,7 +213,7 @@ namespace DogSimulator.Networking
                 {
                     var owner = IsSinglePlayer ? PlayerRef.None : runner.LocalPlayer;
                     var spawned = runner.Spawn(sandboxRegistryPrefab, onBeforeSpawned: (_, obj) =>
-                        obj.GetComponent<SandboxInteractionRegistry>().InitializeWorld(worldSlot, owner));
+                        obj.GetComponent<SandboxInteractionRegistry>().InitializeWorld(worldSlot, owner, city));
                     if (spawned != null) return spawned.GetComponent<SandboxInteractionRegistry>();
                 }
                 await Task.Yield();
@@ -241,41 +221,43 @@ namespace DogSimulator.Networking
             throw new TimeoutException("Sandbox interaction registry was not available.");
         }
 
-        private async Task<ModelSelectionResult> ReserveAsync(int modelId, CancellationToken token)
+        private async Task<PlayerRef> WaitForRoomOwnerAsync(SandboxInteractionRegistry registry,
+            CancellationToken token)
         {
-            if (registry == null || selectionRequest == null) return ModelSelectionResult.PlayerUnavailable;
-            var requestId = unchecked(++selectionRequestId);
-            if (!selectionRequest.Submit(modelId, requestId)) return ModelSelectionResult.PlayerUnavailable;
             var expires = Time.realtimeSinceStartup + config.ConnectionTimeoutSeconds;
-            while (runner != null && runner.IsRunning && Time.realtimeSinceStartup < expires)
+            while (runner != null && runner.IsRunning && registry != null
+                && registry.Object != null && registry.Object.IsValid
+                && Time.realtimeSinceStartup < expires)
             {
                 token.ThrowIfCancellationRequested();
-                if (registry.TryGetReservation(runner.LocalPlayer, out var reserved) && reserved == modelId)
-                    return ModelSelectionResult.Approved;
-                if (registry.TryGetResult(runner.LocalPlayer, requestId, out var result)
-                    && result != ModelSelectionResult.None && result != ModelSelectionResult.Approved)
-                    return result;
+                var owner = registry.RoomOwner;
+                if (IsRoomOwnerReady(owner, runner.CommittedPlayers)) return owner;
                 await Task.Yield();
             }
-            return ModelSelectionResult.PlayerUnavailable;
+            throw new TimeoutException("The room owner metadata was not replicated in time.");
+        }
+
+        internal static bool IsRoomOwnerReady(PlayerRef owner, System.Collections.Generic.IEnumerable<PlayerRef> committedPlayers)
+        {
+            if (!owner.IsRealPlayer || committedPlayers == null) return false;
+            foreach (var player in committedPlayers)
+                if (player == owner) return true;
+            return false;
         }
 
         public async Task<ModelSelectionResult> SelectModelAsync(int modelId)
         {
-            if (!IsConnected || runner == null || registry == null)
+            if (!IsConnected || runner == null || localPlayer == null || !modelCatalog.IsValidModelId(modelId))
                 return ModelSelectionResult.PlayerUnavailable;
             Message = "Requesting dog model…";
             Changed?.Invoke();
-            var result = await ReserveAsync(modelId, CancellationToken.None);
+            var result = localPlayer.RequestModel(modelId)
+                ? ModelSelectionResult.Approved : ModelSelectionResult.InvalidModel;
+            await Task.Yield();
             if (result == ModelSelectionResult.Approved)
             {
                 SelectedModelId = modelId;
-                if (localPlayer == null) SpawnLocalAvatar(modelId);
-                else
-                {
-                    localPlayer.SetModel(modelId);
-                    Message = $"Dog changed to {modelCatalog.Resolve(modelId).DisplayName}.";
-                }
+                Message = $"Dog changed to {modelCatalog.Resolve(modelId).DisplayName}.";
             }
             else Message = DogModelSelectionRegistry.Describe(result);
             Changed?.Invoke();
@@ -286,10 +268,10 @@ namespace DogSimulator.Networking
         {
             var slot = CalculateSpawnSlot(runner.LocalPlayer);
             var spawnPosition = FindAvailableSpawnPosition(slot);
-            var avatar = runner.Spawn(playerPrefab, spawnPosition, spawnPoint.rotation);
+            var avatar = runner.Spawn(playerPrefab, spawnPosition, spawnPoint.rotation, runner.LocalPlayer);
             if (avatar == null) throw new InvalidOperationException("Player prefab could not be spawned.");
             localPlayer = avatar.GetComponent<NetworkDogPlayer>();
-            localPlayer.InitializeOwner(pendingNickname, modelId, followCamera);
+            localPlayer.ConfigureLocalOwner(pendingNickname, modelId, followCamera);
             if (modelCatalog.TryGet(modelId, out var entry) && entry.SupportsCustomFace
                 && DogFaceStorage.TryLoad(out var savedFace)) localPlayer.PublishCustomFace(savedFace);
             else localPlayer.PublishDefaultFace();
@@ -300,33 +282,136 @@ namespace DogSimulator.Networking
                     : $"Connected to {RoomCode} ({config.Region}) with {modelCatalog.Resolve(modelId).DisplayName}.");
         }
 
+        private async Task WaitForLocalAvatarAsync(int modelId, CancellationToken token)
+        {
+            var expires = Time.realtimeSinceStartup + config.ConnectionTimeoutSeconds;
+            while (runner != null && runner.IsRunning && Time.realtimeSinceStartup < expires)
+            {
+                token.ThrowIfCancellationRequested();
+                var avatar = runner.GetPlayerObject(runner.LocalPlayer);
+                if (avatar != null && avatar.IsValid)
+                {
+                    localPlayer = avatar.GetComponent<NetworkDogPlayer>();
+                    if (localPlayer == null) throw new InvalidOperationException("Player prefab has no NetworkDogPlayer.");
+                    localPlayer.ConfigureLocalOwner(pendingNickname, modelId, followCamera);
+                    if (modelCatalog.TryGet(modelId, out var entry) && entry.SupportsCustomFace
+                        && DogFaceStorage.TryLoad(out var savedFace)) localPlayer.PublishCustomFace(savedFace);
+                    else localPlayer.PublishDefaultFace();
+                    SelectedModelId = modelId;
+                    SetState(SessionState.Connected,
+                        $"Connected to {RoomCode} ({config.Region}) with {modelCatalog.Resolve(modelId).DisplayName}.");
+                    return;
+                }
+                await Task.Yield();
+            }
+            throw new TimeoutException("The host did not spawn the local avatar.");
+        }
+
+        private void OnPlayerJoined(NetworkRunner source, PlayerRef player)
+        {
+            if (source != runner || !source.IsServer || source.GameMode == GameMode.Single) return;
+            var existing = FindAvatarForPlayer(source, player);
+            if (existing != null)
+            {
+                if (source.GetPlayerObject(player) == null) source.SetPlayerObject(player, existing);
+                return;
+            }
+            var slot = CalculateSpawnSlot(player);
+            var position = FindAvailableSpawnPosition(slot);
+            var rotation = city != null ? spawnPoint.rotation
+                : Quaternion.LookRotation(spawnPoint.position - position, spawnPoint.up);
+            var avatar = source.Spawn(playerPrefab, position, rotation, player);
+            if (avatar != null) source.SetPlayerObject(player, avatar);
+        }
+
+        private static NetworkObject FindAvatarForPlayer(NetworkRunner source, PlayerRef player)
+        {
+            var registered = source.GetPlayerObject(player);
+            if (registered != null && registered.IsValid) return registered;
+            foreach (var candidate in NetworkDogPlayer.Active)
+                if (candidate != null && candidate.Runner == source && candidate.Object != null
+                    && candidate.Object.IsValid && candidate.Object.InputAuthority == player)
+                    return candidate.Object;
+            return null;
+        }
+
+        private void OnPlayerLeft(NetworkRunner source, PlayerRef player)
+        {
+            if (source != runner) return;
+            if (player == roomOwner && player != source.LocalPlayer)
+            {
+                SetRoomAvailability(false);
+                _ = LeaveAsync(OwnerLeftMessage);
+                return;
+            }
+            if (!source.IsServer) return;
+            NetworkCarryable.ReleaseCarriedBy(source, player);
+            foreach (var vehicle in NetworkCityVehicle.Active)
+                if (vehicle.Runner == source) vehicle.ReleaseDepartingPlayer(player);
+            // Remove every avatar carrying this authority. Normally there is exactly one;
+            // scanning also cleans up a stale duplicate created by an interrupted join.
+            for (var index = NetworkDogPlayer.Active.Count - 1; index >= 0; index--)
+            {
+                var candidate = NetworkDogPlayer.Active[index];
+                if (candidate != null && candidate.Runner == source && candidate.Object != null
+                    && candidate.Object.IsValid && candidate.Object.InputAuthority == player)
+                    source.Despawn(candidate.Object);
+            }
+        }
+
+        private void OnInput(NetworkRunner source, NetworkInput networkInput)
+        {
+            if (source != runner) return;
+            networkInput.Set(localPlayer != null ? localPlayer.ConsumeNetworkInput() : default(DogNetworkInput));
+        }
+
         private Vector3 FindAvailableSpawnPosition(int initialSlot)
         {
             const int maxAttempts = 32;
+            var controller = playerPrefab.GetComponent<CharacterController>();
+            var center = spawnPoint.rotation * controller.center;
+            var halfAxis = spawnPoint.up * Mathf.Max(0, controller.height * .5f - controller.radius);
+            if (city != null)
+            {
+                var positions = city.SafeSpawns;
+                for (var attempt = 0; attempt < positions.Length; attempt++)
+                {
+                    var position = positions[(initialSlot + attempt) % positions.Length];
+                    if (IsPlayerSpawnOccupied(position)) continue;
+                    if (!Physics.CheckCapsule(position + center - halfAxis, position + center + halfAxis,
+                            controller.radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                        return position;
+                }
+                return spawnPoint.position;
+            }
             for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
                 var candidate = spawnPoint.position
                     + spawnPoint.rotation * CalculateSpawnOffset(initialSlot + attempt);
-                if (!IsPlayerSpawnOccupied(candidate)) return candidate;
+                if (IsPlayerSpawnOccupied(candidate)) continue;
+                var capsuleCenter = candidate + center;
+                if (!Physics.CheckCapsule(capsuleCenter - halfAxis, capsuleCenter + halfAxis,
+                        controller.radius, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    return candidate;
             }
 
             return spawnPoint.position
                 + spawnPoint.rotation * CalculateSpawnOffset(initialSlot + maxAttempts);
         }
 
-        private static bool IsPlayerSpawnOccupied(Vector3 position)
+        private bool IsPlayerSpawnOccupied(Vector3 position)
         {
-            // Match the player CharacterController closely without treating the floor as occupied.
-            var hits = Physics.OverlapCapsule(
-                position + Vector3.up * .32f,
-                position + Vector3.up * .78f,
-                .32f,
-                Physics.AllLayers,
-                QueryTriggerInteraction.Ignore);
-
-            foreach (var hit in hits)
-                if (hit.GetComponentInParent<NetworkDogPlayer>() != null)
+            // The controller capsule is much narrower than the dog visual. Reserve enough
+            // horizontal room for the complete model so adjacent joins never look stacked.
+            var minimumSqr = MinimumSpawnSeparation * MinimumSpawnSeparation;
+            foreach (var player in NetworkDogPlayer.Active)
+            {
+                if (player == null || player.Runner != runner || player.Object == null || !player.Object.IsValid)
+                    continue;
+                var delta = player.transform.position - position;
+                if (Mathf.Abs(delta.y) < 2f && new Vector2(delta.x, delta.z).sqrMagnitude < minimumSqr)
                     return true;
+            }
 
             return false;
         }
@@ -340,7 +425,7 @@ namespace DogSimulator.Networking
         {
             slot = Mathf.Max(0, slot);
             var ring = slot / 8;
-            var radius = 2f + ring * 2f;
+            var radius = FirstSpawnRingRadius + ring * SpawnRingSpacing;
             var angle = (slot % 8) * Mathf.PI * .25f + ring * Mathf.PI * .125f;
             return new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
         }
@@ -370,8 +455,6 @@ namespace DogSimulator.Networking
             SaveAndCloseOwnedWorld();
             SetControlsEnabled(false);
             localPlayer = null;
-            registry = null;
-            selectionRequest = null;
             sandbox = null;
             roomOwner = PlayerRef.None;
             SelectedModelId = 0;
@@ -390,8 +473,6 @@ namespace DogSimulator.Networking
             sandbox?.SaveWorld();
             SetControlsEnabled(false);
             localPlayer = null;
-            registry = null;
-            selectionRequest = null;
             sandbox = null;
             roomOwner = PlayerRef.None;
             SelectedModelId = 0;
@@ -412,8 +493,7 @@ namespace DogSimulator.Networking
 
             if (runner == null || !runner.IsRunning || !roomOwner.IsRealPlayer || roomOwner == runner.LocalPlayer
                 || (leaving != null && !leaving.IsCompleted)) return;
-            if ((sandbox != null && sandbox.Object != null && sandbox.Object.IsValid && sandbox.RoomClosing)
-                || !runner.IsPlayerCommitted(roomOwner))
+            if (sandbox != null && sandbox.Object != null && sandbox.Object.IsValid && sandbox.RoomClosing)
             {
                 SetRoomAvailability(false);
                 _ = LeaveAsync(OwnerLeftMessage);
@@ -422,7 +502,7 @@ namespace DogSimulator.Networking
 
         private void SetRoomAvailability(bool open)
         {
-            if (runner == null || !runner.IsRunning || !runner.IsSharedModeMasterClient) return;
+            if (runner == null || !runner.IsRunning || !runner.IsServer) return;
             runner.SessionInfo.IsOpen = open;
             runner.SessionInfo.IsVisible = open;
         }

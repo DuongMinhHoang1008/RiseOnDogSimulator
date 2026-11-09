@@ -15,7 +15,6 @@ namespace DogSimulator.Networking
     {
         private const string ModelKey = "DogSimulator.DogModelId";
         private const string NicknameKey = "DogSimulator.Nickname";
-        private const string LastMascotKey = "DogSimulator.LastHomeDog";
         private enum Page { Home, Prepare, Hub, Face, Gameplay }
         private enum Launch { SinglePlayer, Create, Join }
         private readonly Dictionary<Page, CanvasGroup> pages = new();
@@ -33,7 +32,7 @@ namespace DogSimulator.Networking
         private TMP_Text hubMessage;
         private UnityEngine.UI.Button continueButton;
         private UnityEngine.UI.Button cancelConnectionButton;
-        private UnityEngine.UI.RawImage homeDog;
+        private UnityEngine.UI.Image homeDog;
         private UnityEngine.UI.RawImage selectedDog;
         private UnityEngine.UI.RawImage faceDog;
         private UnityEngine.UI.RawImage faceCanvas;
@@ -84,7 +83,7 @@ namespace DogSimulator.Networking
             switch (next)
             {
                 case Page.Home:
-                    ShowMascot();
+                    preview.PresentHomeDog(homeDog);
                     break;
                 case Page.Prepare:
                     ShowSelectedDog();
@@ -104,22 +103,6 @@ namespace DogSimulator.Networking
                     nextRoomStatusUpdate = 0;
                     break;
             }
-        }
-
-        private void ShowMascot()
-        {
-            var entries = session.ModelCatalog.Entries;
-            var previous = PlayerPrefs.GetInt(LastMascotKey, int.MinValue);
-            var choices = new List<DogModelCatalog.Entry>();
-            foreach (var dog in entries)
-                if (dog.VisualPrefab != null && dog.ModelId != previous) choices.Add(dog);
-            var modelId = choices.Count == 0 ? session.ModelCatalog.FallbackModelId
-                : choices[UnityEngine.Random.Range(0, choices.Count)].ModelId;
-            PlayerPrefs.SetInt(LastMascotKey, modelId);
-            PlayerPrefs.Save();
-            preview.PresentIn(homeDog, true);
-            preview.ShowModel(modelId);
-            preview.ResetFaceToDefault();
         }
 
         private void Prepare(Launch mode, string code = null)

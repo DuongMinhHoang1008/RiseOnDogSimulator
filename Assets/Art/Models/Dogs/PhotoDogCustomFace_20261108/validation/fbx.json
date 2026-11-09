@@ -1,0 +1,162 @@
+{
+  "input": "model/PhotoDogCustomFace_Rigged.fbx",
+  "blender_version": "5.2.3 LTS",
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "FaceSurface",
+      "vertices": 471,
+      "triangles": 802,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
+      "name": "PhotoDogCustomFace_Body",
+      "vertices": 8865,
+      "triangles": 17482,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "BlankFace_Default.png",
+      "size": [
+        512,
+        512
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    },
+    {
+      "name": "Dog_BaseColor.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    },
+    {
+      "name": "Dog_BaseColor.png.001",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "Non-Color"
+    },
+    {
+      "name": "Dog_Normal.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "Non-Color"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        1.0,
+        61.0
+      ],
+      "duration_seconds": 2.0,
+      "sampled_max_vertex_motion": 0.01897090410507827,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        1.0,
+        25.0
+      ],
+      "duration_seconds": 0.8,
+      "sampled_max_vertex_motion": 0.2298910209131998,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        1.0,
+        43.0
+      ],
+      "duration_seconds": 1.4,
+      "sampled_max_vertex_motion": 0.31389685705988996,
+      "loop_endpoint_delta": 0.004427709382110085
+    },
+    "Bark": {
+      "frames": [
+        1.0,
+        37.0
+      ],
+      "duration_seconds": 1.2,
+      "sampled_max_vertex_motion": 0.06307326443668196,
+      "loop_endpoint_delta": 0.0
+    },
+    "Poop": {
+      "frames": [
+        1.0,
+        109.0
+      ],
+      "duration_seconds": 3.6,
+      "sampled_max_vertex_motion": 0.14680266373475806,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        1.0,
+        97.0
+      ],
+      "duration_seconds": 3.2,
+      "sampled_max_vertex_motion": 0.37971660881154573,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        1.0,
+        28.0
+      ],
+      "duration_seconds": 0.9,
+      "sampled_max_vertex_motion": 0.1287406968883082,
+      "loop_endpoint_delta": 8.146367654461627e-05
+    }
+  },
+  "vertices": 9336,
+  "triangles": 18284,
+  "max_influences": 4,
+  "custom_face": {
+    "uv_min": [
+      0.0,
+      0.0
+    ],
+    "uv_max": [
+      1.0,
+      1.0
+    ],
+    "default_texture": [
+      512,
+      512
+    ],
+    "default_texture_is_solid": true,
+    "matched_seam_vertices": 118,
+    "max_seam_gap_per_clip_scene_units": {
+      "Idle": 0.0,
+      "Run": 0.0,
+      "Jump": 0.0,
+      "Bark": 0.0,
+      "Poop": 0.0,
+      "Pee": 0.0,
+      "Bite": 0.0
+    }
+  },
+  "status": "PASS"
+}

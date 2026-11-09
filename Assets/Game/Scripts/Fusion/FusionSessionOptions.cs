@@ -12,6 +12,10 @@ namespace DogSimulator.Networking
         public const string CreationKey = "creation";
         public const string VersionKey = "build";
         public const string WorldBuild = "office-world-slots-v2";
+        public const string HostProtocolPrefix = "pc-host-v5-";
+
+        public static string ProtocolVersion(NetworkConfig config)
+            => HostProtocolPrefix + config.GameVersion;
 
         public static StartGameArgs Build(NetworkConfig config, FusionAppSettings settings,
             string code, bool create, string creationId, CancellationToken cancellation)
@@ -24,11 +28,11 @@ namespace DogSimulator.Networking
 
             return new StartGameArgs
             {
-                GameMode = GameMode.Shared,
+                GameMode = create ? GameMode.Host : GameMode.Client,
                 SessionName = normalized,
-                EnableClientSessionCreation = create,
+                EnableClientSessionCreation = false,
                 IsVisible = false,
-                IsOpen = !create,
+                IsOpen = false,
                 PlayerCount = config.MaxPlayers,
                 CustomPhotonAppSettings = CopySettings(config, settings),
                 UseCachedRegions = false,
@@ -36,7 +40,7 @@ namespace DogSimulator.Networking
                 SessionProperties = create ? new Dictionary<string, SessionProperty>
                 {
                     [CreationKey] = creationId,
-                    [VersionKey] = config.GameVersion
+                    [VersionKey] = ProtocolVersion(config)
                 } : null
             };
         }
@@ -45,13 +49,12 @@ namespace DogSimulator.Networking
         {
             var copy = settings.GetCopy();
             copy.FixedRegion = config.Region;
-            copy.AppVersion = config.GameVersion;
+            copy.AppVersion = ProtocolVersion(config);
             copy.emptyRoomTtl = 0;
             return copy;
         }
 
-        // Shared StartGame can join an existing named room. A fresh nonce distinguishes
-        // our creation from a collision before we spawn or report a successful create.
+        // Host creation writes a nonce so a room-code collision is never mistaken for success.
         public static bool MatchesCreation(IReadOnlyDictionary<string, SessionProperty> properties, string creationId)
             => properties != null && properties.TryGetValue(CreationKey, out var value)
                 && value.IsString && (string)value == creationId;

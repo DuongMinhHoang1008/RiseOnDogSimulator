@@ -27,13 +27,20 @@ namespace DogSimulator.Player
         public void Simulate(DogInputReader input, float yaw, float deltaTime, bool knockedDown = false)
         {
             if (motor == null || input == null || config == null || deltaTime <= 0) return;
+            Simulate(input.Move, input.Sprint, input.ConsumeJump(), input.ConsumeAction(),
+                input.GameplayEnabled, yaw, deltaTime, knockedDown);
+        }
+
+        // Simulation entry point used by the Fusion State Authority.
+        public void Simulate(Vector2 move, bool sprint, bool jump, DogAction requested,
+            bool gameplayEnabled, float yaw, float deltaTime, bool knockedDown = false)
+        {
+            if (motor == null || config == null || deltaTime <= 0) return;
             PoopCooldown = Mathf.Max(0, PoopCooldown - deltaTime);
             PeeCooldown = Mathf.Max(0, PeeCooldown - deltaTime);
             RemainingSeconds = Mathf.Max(0, RemainingSeconds - deltaTime);
             if (CurrentAction != DogAction.None && CurrentAction != DogAction.Jump && RemainingSeconds <= 0) ClearAction();
-            if (!input.GameplayEnabled) ClearAction();
-            var jump = input.ConsumeJump();
-            var requested = input.ConsumeAction();
+            if (!gameplayEnabled) ClearAction();
             if (knockedDown)
             {
                 ClearAction();
@@ -41,17 +48,17 @@ namespace DogSimulator.Player
                 NormalizedSpeed = 0;
                 return;
             }
-            var moving = input.Move.sqrMagnitude > .01f;
+            var moving = move.sqrMagnitude > .01f;
             if ((jump && motor.IsGrounded) || (moving && (CurrentAction == DogAction.Poop || CurrentAction == DogAction.Pee))) ClearAction();
             if (requested != DogAction.None && CurrentAction == DogAction.None && motor.IsGrounded
                 && (requested != DogAction.Poop || PoopCooldown <= 0)
                 && (requested != DogAction.Pee || PeeCooldown <= 0)
                 && (!moving || (requested != DogAction.Poop && requested != DogAction.Pee))) Begin(requested);
             var locked = CurrentAction != DogAction.None && CurrentAction != DogAction.Jump;
-            motor.Simulate(locked ? Vector2.zero : input.Move, input.Sprint, jump, yaw, deltaTime);
+            motor.Simulate(locked ? Vector2.zero : move, sprint, jump, yaw, deltaTime);
             if (motor.JumpedThisStep) Begin(DogAction.Jump);
             else if (CurrentAction == DogAction.Jump && motor.IsGrounded) ClearAction();
-            NormalizedSpeed = input.GameplayEnabled ? motor.NormalizedSpeed : 0;
+            NormalizedSpeed = gameplayEnabled ? motor.NormalizedSpeed : 0;
         }
 
         private void Begin(DogAction action)

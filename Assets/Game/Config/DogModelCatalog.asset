@@ -16,34 +16,24 @@ MonoBehaviour:
   entries:
   - modelId: 1
     displayName: Reference Dog (fallback)
-    visualPrefab: {fileID: 9025284767998993481, guid: 243527f90b9b92041b27aa6ffcfe2e0d, type: 3}
-    animationController: {fileID: 9100000, guid: 11266a3838e678f45b5a44075c60aa18, type: 2}
+    visualPrefab: {fileID: 7841334188895361824, guid: 180fe33efb57edd47a9216a681dc9425, type: 3}
+    animationController: {fileID: 22100000, guid: cf32b6d3f48cc6a43ab5d1affa9dbc31, type: 2}
     localPosition: {x: 0, y: 0, z: 0}
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     mouthAnchor: {x: 0, y: 0.8, z: 0.6}
-    supportsCustomFace: 0
-    faceLayoutVersion: 0
+    supportsCustomFace: 1
+    faceLayoutVersion: 1
   - modelId: 1001
     displayName: Photo Dog
-    visualPrefab: {fileID: 919132149155446097, guid: 8fc82ae7f511b1e429c22889ef1c1be9, type: 3}
-    animationController: {fileID: 22100000, guid: 8ac3dc6002640684f972e0ce02240a7e, type: 2}
+    visualPrefab: {fileID: 682369979944599101, guid: a9bcf1e593562244baf0d9828a94963c, type: 3}
+    animationController: {fileID: 22100000, guid: 17a69222cb56fdc46b5c25a8ee2e5ae8, type: 2}
     localPosition: {x: 0, y: 0, z: 0}
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     mouthAnchor: {x: 0, y: 0.8, z: 0.6}
-    supportsCustomFace: 0
-    faceLayoutVersion: 0
-  - modelId: 1002
-    displayName: Shiba Face
-    visualPrefab: {fileID: 919132149155446097, guid: e10986386598aac4880315e8658e2137, type: 3}
-    animationController: {fileID: 22100000, guid: 53ca56c30be637b41a68871023550426, type: 2}
-    localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    localScale: {x: 1, y: 1, z: 1}
-    mouthAnchor: {x: 0, y: 0.8, z: 0.6}
-    supportsCustomFace: 0
-    faceLayoutVersion: 0
+    supportsCustomFace: 1
+    faceLayoutVersion: 1
   - modelId: 1101
     displayName: Blank Face Dog
     visualPrefab: {fileID: 8689223503430754587, guid: de39fae12fc1ae341895a3458bc6890d, type: 3}

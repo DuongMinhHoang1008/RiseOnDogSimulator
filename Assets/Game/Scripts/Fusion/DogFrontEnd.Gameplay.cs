@@ -13,6 +13,8 @@ namespace DogSimulator.Networking
         private RectTransform gameplayHud;
         private RectTransform pickupHint;
         private GameObject carryHints;
+        private TMP_Text vehicleHint;
+        private GameObject vehicleHints;
         private TMP_Text roomStatus;
         private TMP_Text poopHint;
         private TMP_Text peeHint;
@@ -46,6 +48,10 @@ namespace DogSimulator.Networking
             BuildKeyHint(HudAnchor(held, "Throw Hint", TopLeft, TopLeft, new Vector2(144, 0), 180, 44), "LMB", "Throw");
             carryHints = held.gameObject;
             carryHints.SetActive(false);
+            var vehicle = HudAnchor(root, "Vehicle Hint", BottomCenter, BottomCenter, new Vector2(0, 84), 252, 44);
+            vehicleHint = BuildKeyHint(vehicle, "E", "Enter vehicle");
+            vehicleHints = vehicle.gameObject;
+            vehicleHints.SetActive(false);
 
             TMP_Text AddActionRow(string key, string action, float y)
                 => BuildKeyHint(HudAnchor(actionList, action + " Hint", TopLeft, TopLeft, new Vector2(0, -y), 174, 39), key, action);
@@ -89,6 +95,9 @@ namespace DogSimulator.Networking
             var target = playing && session.HasAvatar ? session.LocalPlayer.GetCarryTarget(out carrying) : null;
             carryHints.SetActive(carrying);
             pickupHint.gameObject.SetActive(!carrying && target != null && PositionPickupHint(target));
+            var vehiclePrompt = playing && session.HasAvatar && !carrying ? session.LocalPlayer.VehiclePrompt() : null;
+            vehicleHints.SetActive(vehiclePrompt != null);
+            if (vehiclePrompt != null && vehicleHint.text != vehiclePrompt) vehicleHint.text = vehiclePrompt;
 
             if (session.IsSinglePlayer || !session.HasAvatar || Time.unscaledTime < nextRoomStatusUpdate) return;
             nextRoomStatusUpdate = Time.unscaledTime + .25f;

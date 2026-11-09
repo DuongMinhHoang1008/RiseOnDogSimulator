@@ -108,3 +108,7 @@ Mục tiêu thử ban đầu trong cùng region với điều kiện mạng đư
 - Kết quả local sau triển khai: EditMode `44/44` đạt; PlayMode `18/18` đạt; modal và mặt preview đã kiểm tra thủ công trong Editor.
 
 Các gate Web chưa được tuyên bố đạt: picker trong iframe itch.io, đọc/lưu sau reload trên browser thật, hai/ba client với late join, chuyển host, payload sát trần và phòng tám client. Cần chạy đúng ma trận mục 6 trên Web build trước khi đổi trạng thái thành nghiệm thu phát hành.
+
+## Tương thích runtime Fusion 2.1.4
+
+Các DLL Fusion Runtime trong repo cấp `InternalsVisibleTo("DogSimulator.Fusion")`. Weaver 2.1.4 sinh lời gọi tới `NetworkBehaviourUtils.CheckInvokeRpc`, một hàm `internal`. Quyền này cần có trong DLL đang dùng và cả biến thể Debug/Release đi kèm. Kiểm tra lại khi thay SDK.

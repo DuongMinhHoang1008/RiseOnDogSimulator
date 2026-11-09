@@ -19,12 +19,15 @@ namespace DogSimulator.Networking
         private int worldSlot;
         private NetworkCarryable[] persistentProps;
         private WorldSaveSlots.PropPose[] savedPoses;
+        private WorldSaveSlots.CityProp[] cityPoses;
+        private SimplePolyCityWorld city;
         private float nextSave;
 
-        internal void InitializeWorld(int slot, PlayerRef owner)
+        internal void InitializeWorld(int slot, PlayerRef owner, SimplePolyCityWorld cityWorld = null)
         {
             RoomOwner = owner;
             worldSlot = slot;
+            city = cityWorld;
         }
 
         internal void BeginClosing()
@@ -52,6 +55,11 @@ namespace DogSimulator.Networking
         private void SpawnContent()
         {
             ContentSpawned = true;
+            if (city != null)
+            {
+                SpawnCity();
+                return;
+            }
             var count = Mathf.Min(carryablePrefabs?.Length ?? 0, spawnPositions?.Length ?? 0);
             var loaded = WorldSaveSlots.Load(worldSlot);
             persistentProps = new NetworkCarryable[count];
@@ -70,6 +78,39 @@ namespace DogSimulator.Networking
             WorldSaveSlots.Save(worldSlot, savedPoses);
         }
 
+        private void SpawnCity()
+        {
+            var loaded = new Dictionary<string, WorldSaveSlots.PropPose>();
+            foreach (var entry in WorldSaveSlots.LoadCity(worldSlot) ?? System.Array.Empty<WorldSaveSlots.CityProp>())
+                if (!string.IsNullOrEmpty(entry.id) && entry.pose.IsValid) loaded[entry.id] = entry.pose;
+
+            persistentProps = new NetworkCarryable[city.Props.Length];
+            cityPoses = new WorldSaveSlots.CityProp[city.Props.Length];
+            for (var i = 0; i < city.Props.Length; i++)
+            {
+                var placement = city.Props[i];
+                if (!loaded.TryGetValue(placement.id, out var pose))
+                    pose = new WorldSaveSlots.PropPose { position = placement.position, rotation = placement.rotation };
+                cityPoses[i] = new WorldSaveSlots.CityProp { id = placement.id, pose = pose };
+                var prop = Runner.Spawn(placement.prefab, pose.position, pose.rotation)?.GetComponent<NetworkCarryable>();
+                persistentProps[i] = prop;
+                prop?.InitializeResetPose(placement.position, placement.rotation, false);
+            }
+
+            foreach (var entry in city.Vehicles)
+            {
+                var placement = entry.placement;
+                Runner.Spawn(placement.prefab, placement.position, placement.rotation,
+                    onBeforeSpawned: (_, obj) => obj.GetComponent<NetworkCityVehicle>().Initialize(entry));
+            }
+            foreach (var entry in city.Pedestrians)
+            {
+                var rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(entry.end - entry.start, Vector3.up));
+                Runner.Spawn(entry.prefab, entry.start, rotation,
+                    onBeforeSpawned: (_, obj) => obj.GetComponent<NetworkCityPedestrian>().Initialize(entry));
+            }
+        }
+
         internal void SaveWorld()
         {
             if (persistentProps == null || !WorldSaveSlots.IsValidSlot(worldSlot)) return;
@@ -79,16 +120,19 @@ namespace DogSimulator.Networking
                 if (prop == null || prop.Object == null || !prop.Object.IsValid) continue;
                 var worldPose = prop.WorldSavePose;
                 var pose = new WorldSaveSlots.PropPose { position = worldPose.position, rotation = worldPose.rotation };
-                if (pose.IsValid) savedPoses[i] = pose;
+                if (!pose.IsValid) continue;
+                if (cityPoses != null) cityPoses[i].pose = pose;
+                else savedPoses[i] = pose;
             }
-            WorldSaveSlots.Save(worldSlot, savedPoses);
+            if (cityPoses != null) WorldSaveSlots.SaveCity(worldSlot, cityPoses);
+            else WorldSaveSlots.Save(worldSlot, savedPoses);
         }
 
         private void SpawnPoopIfDue(NetworkDogPlayer player)
         {
-            if (poopPrefab == null || player.AnimationAction != DogAction.Poop
+            if (poopPrefab == null || player.SeatedVehicleId.IsValid || player.AnimationAction != DogAction.Poop
                 || (player.AnimationUntil.RemainingTime(Runner) ?? float.MaxValue) > .8f) return;
-            var source = player.Object.StateAuthority;
+            var source = player.Object.InputAuthority;
             if (poopEffects.TryGetValue(source, out var previous)
                 && (previous.sequence == player.AnimationSequence || !previous.cooldown.ExpiredOrNotRunning(Runner))) return;
             poopEffects[source] = (player.AnimationSequence, TickTimer.CreateFromSeconds(Runner, DogAnimationDriver.PoopCooldownSeconds));
@@ -102,11 +146,16 @@ namespace DogSimulator.Networking
         private void ProcessRequest(NetworkDogPlayer player)
         {
             if (player.InteractionRequestId <= 0) return;
-            var source = player.Object.StateAuthority;
+            var source = player.Object.InputAuthority;
             if (ProcessedRequests.TryGet(source, out var processed) && processed >= player.InteractionRequestId) return;
             ProcessedRequests.Set(source, player.InteractionRequestId);
             if (player.InteractionKind == SandboxInteractionKind.ResetYard)
             {
+                if (source != RoomOwner && Runner.GameMode != GameMode.Single) return;
+                foreach (var vehicle in NetworkCityVehicle.Active)
+                    if (vehicle.Runner == Runner && vehicle.Object.HasStateAuthority) vehicle.ResetVehicle();
+                foreach (var pedestrian in NetworkCityPedestrian.Active)
+                    if (pedestrian.Runner == Runner && pedestrian.Object.HasStateAuthority) pedestrian.ResetPatrol();
                 for (var i = NetworkCarryable.Active.Count - 1; i >= 0; i--)
                 {
                     var item = NetworkCarryable.Active[i];

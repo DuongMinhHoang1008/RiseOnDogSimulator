@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DogSimulator.Player
@@ -17,6 +18,9 @@ namespace DogSimulator.Player
         private Vector3 externalVelocity;
         private Vector3 simulatedVelocity;
         private bool bouncedThisStep;
+        private readonly Dictionary<Rigidbody, Vector3> pushContacts = new();
+        private Vector3 pushDirection;
+        private bool collectPushContacts;
         [SerializeField, Range(2, 4)] private int maxStackDepth = 3;
 
         public float VerticalSpeed => verticalSpeed;
@@ -27,6 +31,7 @@ namespace DogSimulator.Player
         public int SupportDepth { get; private set; }
         public Vector3 WorldVelocity { get; private set; }
         public event Action<Collider, Vector3> ControllerImpact;
+        public event Action<Rigidbody, Vector3> BodyPush;
         public event Action<float> HardLanding;
 
         public bool TryGetSupportAnchor(out Transform owner, out Vector3 localPosition,
@@ -41,10 +46,15 @@ namespace DogSimulator.Player
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
-            spawnPosition = transform.position;
-            spawnRotation = transform.rotation;
+            CaptureRespawnPose();
             foreach (var ownCollider in GetComponentsInChildren<Collider>(true))
                 if (ownCollider != controller) Physics.IgnoreCollision(controller, ownCollider, true);
+        }
+
+        public void CaptureRespawnPose()
+        {
+            spawnPosition = transform.position;
+            spawnRotation = transform.rotation;
         }
 
         // No Update/FixedUpdate here. Only the authoritative driver advances this motor.
@@ -79,7 +89,13 @@ namespace DogSimulator.Player
             simulatedVelocity = direction * speed + Vector3.up * verticalSpeed + externalVelocity;
             var landingSpeed = Mathf.Max(0, -verticalSpeed);
             var wasGrounded = controller.isGrounded;
+            pushContacts.Clear();
+            pushDirection = direction * speed;
+            collectPushContacts = BodyPush != null;
             var collisions = controller.Move(simulatedVelocity * deltaTime);
+            collectPushContacts = false;
+            foreach (var contact in pushContacts)
+                BodyPush?.Invoke(contact.Key, contact.Value * Mathf.Min(deltaTime * 24f, .8f));
             externalVelocity = Vector3.MoveTowards(externalVelocity, Vector3.zero, 7f * deltaTime);
             var travelled = transform.position - startPosition;
             WorldVelocity = travelled / deltaTime;
@@ -205,6 +221,24 @@ namespace DogSimulator.Player
             }
             if (hit.normal.y < .65f && simulatedVelocity.sqrMagnitude >= 2.25f)
                 ControllerImpact?.Invoke(hit.collider, simulatedVelocity);
+            if (!collectPushContacts || Mathf.Abs(hit.normal.y) >= .55f || hit.rigidbody == null
+                || hit.rigidbody.isKinematic) return;
+            var inward = -Vector3.ProjectOnPlane(hit.normal, Vector3.up).normalized;
+            var speed = Vector3.Dot(pushDirection, inward);
+            if (speed <= .1f) return;
+            var impulse = inward * Mathf.Min(speed, 5f);
+            if (!pushContacts.TryGetValue(hit.rigidbody, out var previous) || previous.sqrMagnitude < impulse.sqrMagnitude)
+                pushContacts[hit.rigidbody] = impulse;
+        }
+
+        public void ClearMotion()
+        {
+            ClearSupport();
+            verticalSpeed = 0;
+            NormalizedSpeed = 0;
+            JumpedThisStep = false;
+            WorldVelocity = Vector3.zero;
+            externalVelocity = simulatedVelocity = Vector3.zero;
         }
 
         public void ApplyKnockback(Vector3 impulse)
@@ -221,12 +255,7 @@ namespace DogSimulator.Player
             var wasEnabled = controller.enabled;
             controller.enabled = false;
             transform.SetPositionAndRotation(spawnPosition, spawnRotation);
-            verticalSpeed = 0;
-            NormalizedSpeed = 0;
-            JumpedThisStep = false;
-            WorldVelocity = Vector3.zero;
-            externalVelocity = simulatedVelocity = Vector3.zero;
-            ClearSupport();
+            ClearMotion();
             controller.enabled = wasEnabled;
         }
     }

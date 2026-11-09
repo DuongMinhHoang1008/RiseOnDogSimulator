@@ -25,23 +25,39 @@ namespace DogSimulator.Networking
 
         private void BuildLayout()
         {
+            // Keep the fitted menu at its reference size in canvas units so text and controls scale together.
+            if (TryGetComponent<UnityEngine.UI.CanvasScaler>(out var scaler))
+                scaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand;
+
             var root = At(transform, "Dog Simulator Menu", 0, 0, 1600, 900);
             var background = At(root, "Illustrated Yard", 0, 0, 1600, 900);
             var backgroundImage = background.gameObject.AddComponent<UnityEngine.UI.RawImage>();
             backgroundImage.texture = Resources.Load<Texture2D>("DogMenu/Yard");
             backgroundImage.raycastTarget = false;
+            if (backgroundImage.texture != null)
+            {
+                var cover = background.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();
+                cover.aspectMode = UnityEngine.UI.AspectRatioFitter.AspectMode.EnvelopeParent;
+                cover.aspectRatio = (float)backgroundImage.texture.width / backgroundImage.texture.height;
+            }
             yard = background.gameObject;
 
-            stage = At(root, "Landscape Safe Area", 0, 0, 1600, 900);
-            var fitter = stage.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();
-            fitter.aspectMode = UnityEngine.UI.AspectRatioFitter.AspectMode.FitInParent;
-            fitter.aspectRatio = 16f / 9;
+            stage = FitMenuFrame(root, "Menu Frame");
             BuildHome(AddPage(Page.Home, "HomeScene"));
             BuildPrepare(AddPage(Page.Prepare, "PrepareScene"));
             BuildHub(AddPage(Page.Hub, "MultiplayerHub"));
             BuildFace(AddPage(Page.Face, "FaceCustomize"));
             BuildGameplayHud(AddPage(Page.Gameplay, "Gameplay HUD", root));
-            BuildSettings();
+            BuildSettings(root);
+        }
+
+        private static RectTransform FitMenuFrame(Transform parent, string name)
+        {
+            var frame = At(parent, name, 0, 0, 1600, 900);
+            var fitter = frame.gameObject.AddComponent<UnityEngine.UI.AspectRatioFitter>();
+            fitter.aspectMode = UnityEngine.UI.AspectRatioFitter.AspectMode.FitInParent;
+            fitter.aspectRatio = 16f / 9;
+            return frame;
         }
 
         private RectTransform AddPage(Page key, string name, RectTransform parent = null)
@@ -61,7 +77,8 @@ namespace DogSimulator.Networking
             skin.Surface(At(mark, "Simulator Plaque", 180, 610, 1315, 272), skin.Primary, Color.white);
             skin.Label(At(mark, "Simulator", 192, 610, 1290, 272), "SIMULATOR", 58, Brown).fontStyle = FontStyles.Bold;
             mark.localRotation = Quaternion.Euler(0, 0, 3);
-            homeDog = ModelViewport(root, "Floating Mascot", 684, 69, 790, 790);
+            homeDog = skin.Surface(At(root, "Floating Mascot", 684, 69, 790, 790), null, Color.white);
+            homeDog.preserveAspect = true;
             skin.Surface(At(root, "Decorative Bone", 1281, 639, 120, 90), skin.Bone, Cream)
                 .rectTransform.localRotation = Quaternion.Euler(0, 0, 24);
             skin.Surface(At(root, "Decorative Paw", 795, 179, 87, 87), skin.Paw, Cream)
@@ -69,7 +86,6 @@ namespace DogSimulator.Networking
             skin.Button(At(root, "Singleplayer", 114, 365, 530, 92), "Singleplayer", () => Prepare(Launch.SinglePlayer), true, 42, skin.Paw);
             skin.Button(At(root, "Multiplayer", 114, 472, 530, 85), "Multiplayer", () => Show(Page.Hub), false, 41, skin.Bone);
             skin.Button(At(root, "Options", 114, 571, 500, 81), "Options", OpenSettings, false, 39, skin.Paw);
-            skin.Button(At(root, "Exit", 114, 666, 475, 81), "Exit", Exit, false, 38, skin.Bone);
             var webExit = skin.Label(At(root, "Exit Note", 110, 755, 465, 48), "Close this browser tab to exit.", 23, Brown);
             skin.Surface(At(root, "Exit Note Paper", 114, 755, 457, 48), skin.Paper, Color.white)
                 .transform.SetSiblingIndex(webExit.transform.GetSiblingIndex());
@@ -77,6 +93,7 @@ namespace DogSimulator.Networking
             webExit.gameObject.SetActive(false);
             var exitPaper = root.Find("Exit Note Paper").gameObject;
             exitPaper.SetActive(false);
+            skin.Button(At(root, "Exit", 114, 666, 475, 81), "Exit", Exit, false, 38, skin.Bone);
 
             void Exit()
             {

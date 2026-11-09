@@ -87,6 +87,9 @@ namespace DogSimulator.Tests
                     runner = (NetworkRunner)runnerField.GetValue(session);
                     var events = runner.GetComponent<NetworkEvents>();
                     Assert.That(events.OnShutdown, Is.Not.Null);
+                    Assert.That(events.OnInput, Is.Not.Null);
+                    Assert.That(events.PlayerJoined, Is.Not.Null);
+                    Assert.That(events.PlayerLeft, Is.Not.Null);
                     var notified = false;
                     events.OnShutdown.AddListener((source, reason) =>
                         notified = source == runner && reason == ShutdownReason.Ok);

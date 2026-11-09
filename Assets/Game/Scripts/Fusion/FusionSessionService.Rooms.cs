@@ -84,7 +84,7 @@ namespace DogSimulator.Networking
                 events.OnShutdown = new NetworkEvents.ShutdownEvent();
                 events.OnShutdown.AddListener(OnLobbyShutdown);
                 lobbyRunner.AddCallbacks(events);
-                var result = await lobbyRunner.JoinSessionLobby(SessionLobby.Shared,
+                var result = await lobbyRunner.JoinSessionLobby(SessionLobby.ClientServer,
                     customAppSettings: FusionSessionOptions.CopySettings(config, settings), cancellationToken: token.Token);
                 if (generation != lobbyGeneration || destroyed) return;
                 UpdateRoomList(result.Ok ? "" : token.IsCancellationRequested
@@ -110,7 +110,7 @@ namespace DogSimulator.Networking
                 if (!entry.IsOpen || !entry.IsVisible || entry.PlayerCount <= 0
                     || !RoomCodeService.TryNormalize(entry.Name, out var code)
                     || !entry.Properties.TryGetValue(FusionSessionOptions.VersionKey, out var build)
-                    || !build.IsString || (string)build != GameVersion) continue;
+                    || !build.IsString || (string)build != FusionSessionOptions.ProtocolVersion(config)) continue;
                 rooms.Add(new RoomListing(code, entry.PlayerCount, entry.MaxPlayers));
             }
             rooms.Sort((left, right) => string.CompareOrdinal(left.Code, right.Code));

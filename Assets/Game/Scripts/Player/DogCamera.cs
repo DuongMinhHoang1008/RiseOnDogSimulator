@@ -30,6 +30,8 @@ namespace DogSimulator.Player
             shake = 0;
         }
 
+        public void Follow(Transform nextTarget) => target = nextTarget;
+
         public void ShakeOnLanding(float speed)
         {
             if (ShakeEnabled) shake = Mathf.InverseLerp(8f, 25f, speed) * .12f;

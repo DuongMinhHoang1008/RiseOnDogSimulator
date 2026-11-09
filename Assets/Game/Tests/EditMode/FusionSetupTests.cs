@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using DogSimulator.Editor;
 using DogSimulator.Networking;
@@ -29,20 +30,23 @@ namespace DogSimulator.Tests
             using (var cancellation = new CancellationTokenSource())
             {
                 var args = FusionSessionOptions.Build(config, source, " abcd23 ", create, "nonce", cancellation.Token);
-                Assert.That(args.GameMode, Is.EqualTo(GameMode.Shared));
+                Assert.That(args.GameMode, Is.EqualTo(create ? GameMode.Host : GameMode.Client));
                 Assert.That(args.SessionName, Is.EqualTo("ABCD23"));
-                Assert.That(args.EnableClientSessionCreation, Is.EqualTo(create));
+                Assert.That(args.EnableClientSessionCreation, Is.False);
                 Assert.That(args.IsVisible, Is.False);
-                Assert.That(args.IsOpen, Is.EqualTo(!create));
+                Assert.That(args.IsOpen, Is.False, "The host opens the room only after the world and avatar are ready.");
                 Assert.That(args.PlayerCount, Is.EqualTo(8));
                 Assert.That(args.CustomPhotonAppSettings.FixedRegion, Is.EqualTo(config.Region));
-                Assert.That(args.CustomPhotonAppSettings.AppVersion, Is.EqualTo(config.GameVersion));
+                Assert.That(args.CustomPhotonAppSettings.AppVersion,
+                    Is.EqualTo(FusionSessionOptions.HostProtocolPrefix + config.GameVersion));
                 Assert.That(args.CustomPhotonAppSettings, Is.Not.SameAs(source));
                 Assert.That(source.FixedRegion, Is.EqualTo("eu"));
                 Assert.That(source.AppVersion, Is.EqualTo("other"));
                 Assert.That(args.StartGameCancellationToken, Is.EqualTo(cancellation.Token));
                 if (create) Assert.That(FusionSessionOptions.MatchesCreation(args.SessionProperties, "nonce"), Is.True);
                 else Assert.That(args.SessionProperties, Is.Null, "A named join must not write the creation marker.");
+                if (create) Assert.That((string)args.SessionProperties[FusionSessionOptions.VersionKey],
+                    Is.EqualTo(FusionSessionOptions.ProtocolVersion(config)));
             }
         }
 
@@ -62,7 +66,7 @@ namespace DogSimulator.Tests
             var offsets = Enumerable.Range(0, 8).Select(FusionSessionService.CalculateSpawnOffset).ToArray();
             for (var i = 0; i < offsets.Length; i++)
                 for (var j = i + 1; j < offsets.Length; j++)
-                    Assert.That(Vector3.Distance(offsets[i], offsets[j]), Is.GreaterThan(1.1f));
+                    Assert.That(Vector3.Distance(offsets[i], offsets[j]), Is.GreaterThan(2.75f));
         }
 
         [Test]
@@ -73,6 +77,34 @@ namespace DogSimulator.Tests
                 .ToArray();
 
             CollectionAssert.AreEqual(Enumerable.Range(0, 8), slots);
+        }
+
+        [Test]
+        public void ClientWaitsUntilReplicatedRoomOwnerIsCommitted()
+        {
+            var owner = PlayerRef.FromIndex(0);
+            var method = typeof(FusionSessionService).GetMethod("IsRoomOwnerReady",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            Assert.That(method.Invoke(null, new object[] { PlayerRef.None, new[] { owner } }), Is.False);
+            Assert.That(method.Invoke(null, new object[] { owner, Array.Empty<PlayerRef>() }), Is.False);
+            Assert.That(method.Invoke(null, new object[] { owner, new[] { owner } }), Is.True);
+        }
+
+        [Test]
+        public void OverlappingPlayersReceiveOppositeDeterministicCorrections()
+        {
+            var method = typeof(NetworkDogPlayer).GetMethod("CalculatePlayerSeparation",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            var first = (Vector3)method.Invoke(null, new object[] { Vector3.zero, Vector3.zero, 0, 1 });
+            var second = (Vector3)method.Invoke(null, new object[] { Vector3.zero, Vector3.zero, 1, 0 });
+            Assert.That(first.x, Is.LessThan(0));
+            Assert.That(second.x, Is.GreaterThan(0));
+            Assert.That(first + second, Is.EqualTo(Vector3.zero));
+            var separated = (Vector3)method.Invoke(null,
+                new object[] { Vector3.zero, Vector3.right, 0, 1 });
+            Assert.That(separated, Is.EqualTo(Vector3.zero));
         }
 
         [TestCase(null)]

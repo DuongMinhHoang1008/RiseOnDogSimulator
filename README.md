@@ -30,6 +30,7 @@ Tích hợp model/animation ngày 05/11/2026: **32/32 EditMode + 16/16 PlayMode 
 - [Nghiệm thu M1 ngày 05/11/2026](Docs/M1_ACCEPTANCE_2026-11-05.md)
 - [Rà soát nghiệm thu M1.1–M2 ngày 06/11/2026](Docs/M1_1_M2_ACCEPTANCE_2026-11-06.md)
 - [Thiết kế gameplay tiếp theo và đánh giá đề xuất](Docs/NEXT_STEPS_GAMEPLAY_M3.md)
+- [Đề xuất kiến trúc Windows PC và lộ trình chuyển](Docs/Specifications/PC_ARCHITECTURE.md)
 - [Chuẩn bị M1.1 và M2](Docs/NEXT_STEPS_M1_1_M2.md)
 - [Setup và kiểm thử local preview](Docs/M1_SETUP_AND_TESTS.md)
 - [Setup và kiểm thử Fusion preview](Docs/M1_FUSION_SETUP_AND_TESTS.md)

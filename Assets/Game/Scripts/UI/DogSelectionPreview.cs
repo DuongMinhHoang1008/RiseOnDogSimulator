@@ -1,7 +1,6 @@
 using DogSimulator.CustomDogFace;
 using DogSimulator.Player;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DogSimulator.UI
 {
@@ -9,15 +8,16 @@ namespace DogSimulator.UI
     {
         private const int PreviewLayer = 31;
         [SerializeField] private DogModelCatalog catalog;
-        [SerializeField] private RawImage viewport;
+        [SerializeField] private DogHomeSceneSpinSO dogHomeSceneCatalog;
+        [SerializeField] private UnityEngine.UI.RawImage viewport;
         [SerializeField] private Camera previewCamera;
         [SerializeField] private Transform previewAnchor;
         [SerializeField, Min(0f)] private float rotationDegreesPerSecond = 16f;
         private RenderTexture renderTexture;
         private GameObject previewModel;
-        private bool floating;
+        private UnityEngine.UI.Image homeDog;
+        private Vector2 homeDogRestPosition;
         private bool menuPresentation;
-        private Vector2 viewportRestPosition;
         private int displayedModelId = int.MinValue;
         public int DisplayedModelId => displayedModelId;
         public bool HasRenderedModel => previewModel != null;
@@ -65,14 +65,24 @@ namespace DogSimulator.UI
             FrameModel();
         }
 
-        public void PresentIn(RawImage destination, bool floatModel = false)
+        public void PresentHomeDog(UnityEngine.UI.Image destination)
+        {
+            if (homeDog != destination)
+            {
+                homeDog = destination;
+                homeDogRestPosition = destination.rectTransform.anchoredPosition;
+            }
+
+            destination.sprite = dogHomeSceneCatalog != null ? dogHomeSceneCatalog.GetRandomDog() : null;
+            destination.enabled = destination.sprite != null;
+        }
+
+        public void PresentIn(UnityEngine.UI.RawImage destination)
         {
             if (viewport != null && viewport != destination) viewport.gameObject.SetActive(false);
             viewport = destination;
             viewport.texture = renderTexture;
-            viewportRestPosition = viewport.rectTransform.anchoredPosition;
             menuPresentation = true;
-            floating = floatModel;
             previewCamera.backgroundColor = Color.clear;
             Rotate(145f);
             if (previewModel != null) FrameModel();
@@ -106,14 +116,15 @@ namespace DogSimulator.UI
 
         private void Update()
         {
-            if (previewModel == null || !previewCamera.enabled) return;
-            if (floating)
+            if (homeDog != null && homeDog.isActiveAndEnabled)
             {
                 var wave = Time.unscaledTime * 2.2f;
-                viewport.rectTransform.anchoredPosition = viewportRestPosition + Vector2.up * Mathf.Sin(wave) * 14f;
-                Rotate(145f + Mathf.Sin(wave * .65f) * 13f);
+                var rect = homeDog.rectTransform;
+                rect.anchoredPosition = homeDogRestPosition + Vector2.up * Mathf.Sin(wave) * 14f;
+                rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(wave * .65f) * 5f);
             }
-            else if (!menuPresentation)
+
+            if (previewModel != null && previewCamera.enabled && !menuPresentation)
                 previewAnchor.Rotate(0f, rotationDegreesPerSecond * Time.unscaledDeltaTime, 0f, Space.Self);
         }
 

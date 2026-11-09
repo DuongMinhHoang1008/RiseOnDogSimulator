@@ -1,0 +1,71 @@
+{
+  "unity": "6000.3.19f1",
+  "model_import": {
+    "rig": "Generic",
+    "vertices": 12065,
+    "triangles": 18284,
+    "clip_overrides": 7
+  },
+  "face": {
+    "object": "FaceSurface",
+    "renderer": "SkinnedMeshRenderer",
+    "layout_version": 1,
+    "uv_min": [
+      0,
+      0
+    ],
+    "uv_max": [
+      1,
+      1
+    ],
+    "applied_jpeg_512": true,
+    "reset_to_default_png": true
+  },
+  "edit_mode": {
+    "CustomDogFaceTests": {
+      "Total": 5,
+      "Passed": 5,
+      "Failed": 0,
+      "Skipped": 0,
+      "Inconclusive": 0
+    },
+    "M2CatalogReservationTests": {
+      "Total": 3,
+      "Passed": 3,
+      "Failed": 0,
+      "Skipped": 0,
+      "Inconclusive": 0
+    }
+  },
+  "console": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "play_mode": {
+    "DogSelectionPreviewTests": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "inconclusive": 0
+    }
+  },
+  "catalog": {
+    "model_id": 1001,
+    "display_name": "Photo Dog",
+    "supports_custom_face": true,
+    "face_layout_version": 1
+  },
+  "singleplayer": {
+    "selected_in_menu": true,
+    "applied_in_face_editor": true,
+    "spawned_with_saved_jpeg": true,
+    "jpeg_bytes": 37336,
+    "reset_to_default_png": true,
+    "console": {
+      "errors": 0,
+      "warnings": 1,
+      "warning": "Fusion NetworkRunner started with no scene in StartGameArgs.Scene."
+    }
+  }
+}

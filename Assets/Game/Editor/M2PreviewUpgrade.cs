@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using DogSimulator.CustomDogFace;
 using DogSimulator.Networking;
 using DogSimulator.Player;
 using DogSimulator.UI;
@@ -24,8 +25,9 @@ namespace DogSimulator.Editor
         public const string RegistryPrefabPath = "Assets/Game/Prefabs/DogModelSelectionRegistry.prefab";
         public const string RequestPrefabPath = "Assets/Game/Prefabs/DogModelSelectionRequest.prefab";
         private const string BaseControllerPath = "Assets/Game/Animation/DogGameplay.controller";
-        private const string ReferenceVisualPath = "Assets/Art/ReferenceDog/Unity/Prefabs/ReferenceDog_realistic_low_vertex_Rigged.prefab";
-        private const string PhotoModelPath = "Assets/Art/Models/Dogs/PhotoDog_20261105/model/Dog_Rigged.fbx";
+        private const string PhotoDogUnityFolder = "Assets/Art/Models/Dogs/PhotoDogCustomFace_20261108/Unity";
+        private const string PhotoDogPrefabPath = PhotoDogUnityFolder + "/PhotoDogCustomFace.prefab";
+        private const string PhotoDogControllerPath = PhotoDogUnityFolder + "/PhotoDogCustomFace.overrideController";
         private const string ShibaModelPath = "Assets/Art/Models/Dogs/ShibaFace_20261105/model/Dog_Rigged.fbx";
 
         [MenuItem("Tools/Dog Simulator/Upgrade Preview to M1.1 + M2")]
@@ -36,9 +38,8 @@ namespace DogSimulator.Editor
             if (!File.Exists(FusionPreviewSetup.ScenePath) || !File.Exists(FusionPreviewSetup.PrefabPath))
                 throw new InvalidOperationException("Create the M1 Fusion preview first.");
 
-            var photoController = ConfigureModel(PhotoModelPath, "PhotoDog");
             var shibaController = ConfigureModel(ShibaModelPath, "ShibaFace");
-            var catalog = CreateOrUpdateCatalog(photoController, shibaController);
+            var catalog = CreateOrUpdateCatalog(shibaController);
             var registryPrefab = CreateOrUpdateRegistry(catalog);
             var requestPrefab = CreateOrUpdateRequest();
             UpgradePlayerPrefab(catalog);
@@ -103,7 +104,7 @@ namespace DogSimulator.Editor
                 || actual.EndsWith("_" + expected, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static DogModelCatalog CreateOrUpdateCatalog(RuntimeAnimatorController photo, RuntimeAnimatorController shiba)
+        private static DogModelCatalog CreateOrUpdateCatalog(RuntimeAnimatorController shiba)
         {
             var catalog = AssetDatabase.LoadAssetAtPath<DogModelCatalog>(CatalogPath);
             if (catalog == null)
@@ -114,23 +115,31 @@ namespace DogSimulator.Editor
             var serialized = new SerializedObject(catalog);
             serialized.FindProperty("fallbackModelId").intValue = 1;
             var entries = serialized.FindProperty("entries");
-            entries.arraySize = 3;
-            SetEntry(entries.GetArrayElementAtIndex(0), 1, "Reference Dog (fallback)",
-                AssetDatabase.LoadAssetAtPath<GameObject>(ReferenceVisualPath),
-                AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(BaseControllerPath), Vector3.zero, Vector3.one);
-            SetEntry(entries.GetArrayElementAtIndex(1), 1001, "Photo Dog",
-                AssetDatabase.LoadAssetAtPath<GameObject>(PhotoModelPath), photo, Vector3.zero, Vector3.one);
-            SetEntry(entries.GetArrayElementAtIndex(2), 1002, "Shiba Face",
+            SetEntry(entries, 1, "Reference Dog (fallback)",
+                AssetDatabase.LoadAssetAtPath<GameObject>(DogGameplaySetup.VisualPrefabPath),
+                AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(DogGameplaySetup.VisualControllerPath),
+                Vector3.zero, Vector3.one, CustomDogFaceConstants.LayoutVersion);
+            SetEntry(entries, 1001, "Photo Dog",
+                AssetDatabase.LoadAssetAtPath<GameObject>(PhotoDogPrefabPath),
+                AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(PhotoDogControllerPath),
+                Vector3.zero, Vector3.one, CustomDogFaceConstants.LayoutVersion);
+            SetEntry(entries, 1002, "Shiba Face",
                 AssetDatabase.LoadAssetAtPath<GameObject>(ShibaModelPath), shiba, Vector3.zero, Vector3.one);
             serialized.ApplyModifiedPropertiesWithoutUndo();
             if (!catalog.Validate(out var error)) throw new InvalidOperationException(error);
             return catalog;
         }
 
-        private static void SetEntry(SerializedProperty entry, int id, string name, GameObject prefab,
-            RuntimeAnimatorController controller, Vector3 position, Vector3 scale)
+        private static void SetEntry(SerializedProperty entries, int id, string name, GameObject prefab,
+            RuntimeAnimatorController controller, Vector3 position, Vector3 scale, int faceLayoutVersion = 0)
         {
             if (prefab == null || controller == null) throw new InvalidOperationException($"Catalog asset missing for {name}.");
+            var index = 0;
+            while (index < entries.arraySize
+                && entries.GetArrayElementAtIndex(index).FindPropertyRelative("modelId").intValue != id)
+                index++;
+            if (index == entries.arraySize) entries.InsertArrayElementAtIndex(index);
+            var entry = entries.GetArrayElementAtIndex(index);
             entry.FindPropertyRelative("modelId").intValue = id;
             entry.FindPropertyRelative("displayName").stringValue = name;
             entry.FindPropertyRelative("visualPrefab").objectReferenceValue = prefab;
@@ -139,6 +148,8 @@ namespace DogSimulator.Editor
             entry.FindPropertyRelative("localEulerAngles").vector3Value = Vector3.zero;
             entry.FindPropertyRelative("localScale").vector3Value = scale;
             entry.FindPropertyRelative("mouthAnchor").vector3Value = new Vector3(0, .8f, .6f);
+            entry.FindPropertyRelative("supportsCustomFace").boolValue = faceLayoutVersion > 0;
+            entry.FindPropertyRelative("faceLayoutVersion").intValue = faceLayoutVersion;
         }
 
         private static GameObject CreateOrUpdateRegistry(DogModelCatalog catalog)
