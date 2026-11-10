@@ -21,6 +21,7 @@ namespace DogSimulator.Tests
             floor.transform.position = Spawn + new Vector3(0, -0.35f, 0);
             floor.transform.localScale = new Vector3(100, 0.5f, 100);
             dog = new GameObject("Motor test dog");
+            dog.SetActive(false);
             dog.transform.position = Spawn;
             var controller = dog.AddComponent<CharacterController>();
             controller.height = 1;
@@ -31,8 +32,10 @@ namespace DogSimulator.Tests
 #if UNITY_EDITOR
             var serialized = new UnityEditor.SerializedObject(motor);
             serialized.FindProperty("config").objectReferenceValue = config;
+            serialized.FindProperty("controller").objectReferenceValue = controller;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 #endif
+            dog.SetActive(true);
             Physics.SyncTransforms();
             yield return null;
             Step(Vector2.zero, false, false, 20);

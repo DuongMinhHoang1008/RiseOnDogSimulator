@@ -1,7 +1,7 @@
-"""Build a rigged dog whose replaceable face is part of the head surface."""
+"""Build a faceted dog around the existing animated quadruped rig."""
 import bpy
-import bmesh
 import json
+from math import cos, sin, tau
 from pathlib import Path
 from mathutils import Vector
 
@@ -10,114 +10,294 @@ SOURCE = ROOT.parents[2] / "ReferenceDog" / "realistic_low_vertex" / "Dog_Rigged
 MODEL = ROOT / "model"
 PREVIEWS = ROOT / "previews"
 CLIPS = ("Idle", "Run", "Jump", "Bark", "Poop", "Pee", "Bite")
-FACE_CENTER_Z = .840
-FACE_HALF_WIDTH = .150
-FACE_HALF_HEIGHT = .180
+GINGER = (.71, .36, .15, 1)
+CREAM = (.92, .74, .49, 1)
+ACCENT = (.56, .24, .09, 1)
 
 
-def active(obj):
-    bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
+def matte(name, color):
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    material.diffuse_color = color
+    shader = material.node_tree.nodes.get("Principled BSDF")
+    linear = tuple(((channel + .055) / 1.055) ** 2.4 for channel in color[:3])
+    shader.inputs["Base Color"].default_value = (*linear, color[3])
+    shader.inputs["Roughness"].default_value = .86
+    return material
 
 
-def is_face_point(co):
-    radius = (co.x / FACE_HALF_WIDTH) ** 2 + ((co.z - FACE_CENTER_Z) / FACE_HALF_HEIGHT) ** 2
-    return co.y < -.500 and radius < 1.0
-
-
-def relink_texture(name, filename, noncolor=False):
-    image = next((item for item in bpy.data.images if item.name.startswith(name)), None)
-    if image is None:
-        raise RuntimeError(f"Missing packed source image: {name}")
-    path = MODEL / filename
-    image.filepath_raw = str(path)
-    image.file_format = "PNG"
-    image.save()
-    image.filepath = str(path)
-    image.colorspace_settings.name = "Non-Color" if noncolor else "sRGB"
-    image.pack()
-    return image
-
-
-def blank_texture():
+def face_material():
     path = MODEL / "BlankFace_Default.png"
-    size = 512
-    image = bpy.data.images.new("BlankFace_Default", width=size, height=size, alpha=True)
-    pixel = (.73, .39, .17, 1.0)
-    image.pixels[:] = pixel * (size * size)
+    image = bpy.data.images.new("BlankFace_Bake", width=512, height=512, alpha=False)
+    image.pixels[:] = GINGER * (512 * 512)
     image.filepath_raw = str(path)
     image.file_format = "PNG"
     image.save()
     bpy.data.images.remove(image)
     image = bpy.data.images.load(str(path))
     image.name = "BlankFace_Default"
-    image.colorspace_settings.name = "sRGB"
     image.pack()
-    return image
+
+    material = matte("FaceSurface_Blank", GINGER)
+    nodes = material.node_tree.nodes
+    texture = nodes.new("ShaderNodeTexImage")
+    texture.image = image
+    material.node_tree.links.new(texture.outputs["Color"], nodes.get("Principled BSDF").inputs["Base Color"])
+    return material
 
 
-def extract_face_surface(body, rig):
-    """Move the existing curved facial polygons into a separate renderer."""
-    source = body.data
-    chosen = [poly for poly in source.polygons if is_face_point(poly.center)]
-    if len(chosen) < 40:
-        raise RuntimeError(f"Facial polygon selection is unexpectedly small: {len(chosen)}")
+def profile(width, height, chamfer):
+    if not chamfer:
+        return [(-width, -height), (width, -height), (width, height), (-width, height)]
+    return [
+        (-width + chamfer, -height), (width - chamfer, -height),
+        (width, -height + chamfer), (width, height - chamfer),
+        (width - chamfer, height), (-width + chamfer, height),
+        (-width, height - chamfer), (-width, -height + chamfer),
+    ]
 
-    old_indices = sorted({index for poly in chosen for index in poly.vertices})
-    remap = {old: new for new, old in enumerate(old_indices)}
-    verts = [tuple(source.vertices[index].co) for index in old_indices]
-    faces = [tuple(remap[index] for index in poly.vertices) for poly in chosen]
-    min_x, max_x = min(co[0] for co in verts), max(co[0] for co in verts)
-    min_z, max_z = min(co[2] for co in verts), max(co[2] for co in verts)
 
-    mesh = bpy.data.meshes.new("FaceSurface_Mesh")
-    mesh.from_pydata(verts, [], faces)
-    mesh.update()
-    surface = bpy.data.objects.new("FaceSurface", mesh)
-    bpy.context.collection.objects.link(surface)
+class Blocks:
+    def __init__(self):
+        self.vertices = []
+        self.faces = []
+        self.weights = []
+        self.slots = []
+        self.beveled = []
 
-    uv_layer = mesh.uv_layers.new(name="FaceUV")
-    for polygon in mesh.polygons:
-        polygon.use_smooth = True
-        for loop_index in polygon.loop_indices:
-            co = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            uv_layer.data[loop_index].uv = (
-                (co.x - min_x) / (max_x - min_x),
-                (co.z - min_z) / (max_z - min_z),
+    def shell(self, rings, joints, material=0, band=None, caps=(True, True),
+              soft_corners=False, soft_ends=False):
+        sides = len(rings[0])
+        first = len(self.vertices)
+        for ring, joint in zip(rings, joints, strict=True):
+            self.vertices.extend(ring)
+            self.weights.extend([joint] * sides)
+        if caps[0]:
+            self.face(tuple(range(first, first + sides)), material)
+        for ring_index in range(len(rings) - 1):
+            near = first + ring_index * sides
+            far = near + sides
+            for i in range(sides):
+                j = (i + 1) % sides
+                slot = material if band is None else band[i]
+                bevel = (soft_corners and i % 2 == 1) or (
+                    soft_ends and ring_index in (0, len(rings) - 2)
+                )
+                self.face((near + j, near + i, far + i, far + j), slot, bevel)
+        if caps[1]:
+            last = first + (len(rings) - 1) * sides
+            self.face(tuple(reversed(range(last, last + sides))), material)
+
+    def face(self, indices, material, bevel=False):
+        self.faces.append(indices)
+        self.slots.append(material)
+        self.beveled.append(bevel)
+
+    def mesh(self, name, materials):
+        mesh = bpy.data.meshes.new(name)
+        mesh.from_pydata(self.vertices, [], self.faces)
+        mesh.update()
+        for material in materials:
+            mesh.materials.append(material)
+        for polygon, slot, bevel in zip(mesh.polygons, self.slots, self.beveled, strict=True):
+            polygon.material_index = slot
+            polygon.use_smooth = bevel
+        if any(self.beveled):
+            # Blend narrow bevels toward adjacent broad planes without shading the planes themselves.
+            weighted = [Vector() for _ in mesh.vertices]
+            for polygon in mesh.polygons:
+                for index in polygon.vertices:
+                    weighted[index] += polygon.normal * polygon.area
+            normals = [Vector() for _ in mesh.loops]
+            for polygon in mesh.polygons:
+                if polygon.use_smooth:
+                    for index in polygon.loop_indices:
+                        vertex = mesh.loops[index].vertex_index
+                        normal = weighted[vertex].normalized()
+                        joint = self.weights[vertex]
+                        if isinstance(joint, str) and (joint == "Pelvis" or joint.startswith("RearUpper_")):
+                            # Retain the sideward normal through the thin bevel instead
+                            # of letting the upper plane dominate the highlight.
+                            normal.z -= max(0, normal.z) * .52
+                            normal.normalize()
+                        normals[index] = normal
+            mesh.normals_split_custom_set(normals)
+        return mesh
+
+    def skin(self, obj):
+        weights = [{joint: 1.0} if isinstance(joint, str) else joint for joint in self.weights]
+        names = dict.fromkeys(name for vertex_weights in weights for name in vertex_weights)
+        groups = {name: obj.vertex_groups.new(name=name) for name in names}
+        for index, vertex_weights in enumerate(weights):
+            for name, weight in vertex_weights.items():
+                groups[name].add([index], weight, "REPLACE")
+
+
+def section(y, z, width, height, corner, x_center=0):
+    return [(x_center + x, y, z + offset) for x, offset in profile(width, height, corner)]
+
+
+def beam(blocks, bone, start, end, size_start, size_end, slot=0, soften=False):
+    """A tapered prism aligned to one animated segment."""
+    direction = (end - start).normalized()
+    width_axis = Vector((1, 0, 0))
+    depth_axis = width_axis.cross(direction).normalized()
+    width_axis = direction.cross(depth_axis).normalized()
+    chamfer = min(*size_start, *size_end) * .22 if soften else 0
+    sections = [(start, size_start), (end, size_end)]
+    if soften:
+        inset = direction * chamfer
+        sections = [
+            (start, tuple(size - chamfer * .52 for size in size_start)),
+            (start + inset, size_start),
+            (end - inset, size_end),
+            (end, tuple(size - chamfer * .52 for size in size_end)),
+        ]
+    rings = [
+        [center + width_axis * x + depth_axis * z for x, z in profile(*size, chamfer)]
+        for center, size in sections
+    ]
+    blocks.shell(rings, (bone,) * len(rings), slot, soft_corners=soften, soft_ends=soften)
+
+
+def bone_beam(blocks, rig, name, start, end, size_start, size_end):
+    bone = rig.data.bones[name]
+    beam(blocks, name, bone.head_local.lerp(bone.tail_local, start),
+         bone.head_local.lerp(bone.tail_local, end), size_start, size_end, soften=True)
+
+
+def curved_tail(blocks):
+    points = [
+        (Vector((0, .422, .643)), .074, "Pelvis"),
+        (Vector((0, .55, .784)), .071, "Tail_01"),
+        (Vector((0, .546, .965)), .059, "Tail_02"),
+        (Vector((.012, .365, 1.099)), .047, "Tail_03"),
+        (Vector((.014, .204, 1.001)), .025, "Tail_04"),
+        (Vector((.015, .166, .953)), .010, "Tail_04"),
+    ]
+    samples = [points[0]]
+    for previous, current, following in zip(points, points[1:], points[2:]):
+        center, radius, joint = current
+        left = center.lerp(previous[0], .28)
+        right = center.lerp(following[0], .28)
+        left_radius = .72 * radius + .28 * previous[1]
+        right_radius = .72 * radius + .28 * following[1]
+
+        def weights(left_weight, right_weight):
+            result = {joint: 1.0}
+            for name, weight in ((previous[2], left_weight), (following[2], right_weight)):
+                if weight and name != joint:
+                    result[name] = result.get(name, 0) + weight
+                    result[joint] -= weight
+            return result
+
+        samples.extend((
+            (left, left_radius, weights(.28, 0)),
+            (.25 * left + .50 * center + .25 * right,
+             .25 * left_radius + .50 * radius + .25 * right_radius, weights(.07, .07)),
+            (right, right_radius, weights(0, .28)),
+        ))
+    root, _, _ = samples[0]
+    first_bend, _, _ = samples[1]
+    samples[0] = (root + Vector((0, -.008, -.014)), .077, "Pelvis")
+    samples.insert(1, (root.lerp(first_bend, .44) + Vector((0, -.008, .009)),
+                       .072, {"Pelvis": .77, "Tail_01": .23}))
+
+    tip, _, tip_joint = points[-1]
+    before_tip, before_radius, _ = samples[-1]
+    samples.extend((
+        (before_tip.lerp(tip, .80), .20 * before_radius + .80 * .010, tip_joint),
+        (tip, .006, tip_joint),
+    ))
+
+    rings = []
+    for i, (center, radius, _) in enumerate(samples):
+        tangent = (samples[min(i + 1, len(samples) - 1)][0] - samples[max(0, i - 1)][0]).normalized()
+        cross = Vector((1, 0, 0)).cross(tangent).normalized()
+        width = tangent.cross(cross).normalized()
+        rings.append([center + width * x + cross * z for x, z in profile(radius, radius, radius * .34)])
+    blocks.shell(rings, [joint for _, _, joint in samples], soft_corners=True, soft_ends=True)
+
+
+def make_dog(body, rig):
+    blocks = Blocks()
+    blocks.shell(
+        [section(*shape) for shape in (
+            (-.31, .565, .137, .133, .043), (-.275, .560, .169, .160, .050),
+            (-.16, .547, .208, .190, .060), (.19, .546, .202, .164, .052),
+            (.41, .556, .199, .155, .054), (.475, .564, .174, .134, .049),
+            (.51, .567, .147, .114, .045),
+        )],
+        ("Chest", "Chest", "Chest", "Spine", "Pelvis", "Pelvis", "Pelvis"),
+        band=(1, 1, 0, 0, 0, 0, 0, 1), soft_corners=True,
+    )
+    bone_beam(blocks, rig, "Neck", -.36, 1.31, (.13, .126), (.146, .112))
+
+    # Both renderers meet along the same octagon. The face bevel belongs to the
+    # actual head shell, so a player image wraps over the front facets.
+    center_z = .835
+    seam = section(-.521, center_z, .164, .166, .035)
+    face_front = [
+        (x, -.601 + .24 * (z - center_z), z)
+        for x, _, z in section(0, center_z - .010, .127, .122, .028)
+    ]
+    blocks.shell(
+        [seam, section(-.442, .844, .209, .171, .048),
+         section(-.317, .856, .182, .158, .047), section(-.251, .847, .113, .121, .04)],
+        ("Head",) * 4, caps=(False, True),
+    )
+    for side, sign in (("L", -1), ("R", 1)):
+        ear = f"Ear_{side}"
+        root = Vector((sign * .137, -.395, .963))
+        tip = Vector((sign * .216, -.368, 1.174))
+        beam(blocks, ear, root, tip, (.064, .039), (.009, .008), slot=2)
+
+        bone_beam(blocks, rig, f"FrontUpper_{side}", -.21, 1.15, (.072, .082), (.046, .046))
+        bone_beam(blocks, rig, f"FrontLower_{side}", -.16, 1.13, (.048, .049), (.037, .033))
+        bone_beam(blocks, rig, f"RearUpper_{side}", -.22, 1.19, (.082, .094), (.053, .052))
+        bone_beam(blocks, rig, f"RearLower_{side}", -.17, 1.18, (.056, .052), (.041, .039))
+        bone_beam(blocks, rig, f"RearAnkle_{side}", -.21, 1.18, (.044, .042), (.037, .033))
+        for leg, y in (("Front", -.273), ("Rear", .373)):
+            blocks.shell(
+                [section(y + offset, .053, width, height, .015, sign * .139)
+                 for offset, width, height in ((-.076, .045, .035), (-.040, .061, .049), (.052, .050, .049))],
+                (f"{leg}Paw_{side}",) * 3, material=1, soft_corners=True,
             )
 
-    material = bpy.data.materials.new("FaceSurface_Blank")
-    material.use_nodes = True
-    material.diffuse_color = (.73, .39, .17, 1)
-    nodes = material.node_tree.nodes
-    links = material.node_tree.links
-    shader = nodes.get("Principled BSDF")
-    shader.inputs["Roughness"].default_value = .86
-    texture = nodes.new("ShaderNodeTexImage")
-    texture.image = blank_texture()
-    links.new(texture.outputs["Color"], shader.inputs["Base Color"])
-    mesh.materials.append(material)
+    curved_tail(blocks)
 
-    group = surface.vertex_groups.new(name="Head")
-    group.add(list(range(len(mesh.vertices))), 1.0, "REPLACE")
-    modifier = surface.modifiers.new("Dog_Skin", "ARMATURE")
+    materials = [matte("Dog_Ginger", GINGER), matte("Dog_Cream", CREAM), matte("Dog_Ear", ACCENT)]
+    source_mesh = body.data
+    body.data = blocks.mesh("BlankFaceDog_BodyMesh", materials)
+    bpy.data.meshes.remove(source_mesh)
+    body.vertex_groups.clear()
+    blocks.skin(body)
+
+    # Material-only body UVs let the exporters use a consistent mesh layout.
+    body_uv = body.data.uv_layers.new(name="BodyUV")
+    for polygon in body.data.polygons:
+        for i, index in enumerate(polygon.loop_indices):
+            angle = tau * i / polygon.loop_total
+            body_uv.data[index].uv = (.5 + .5 * cos(angle), .5 + .5 * sin(angle))
+
+    face_blocks = Blocks()
+    face_blocks.shell([face_front, seam], ("Head", "Head"), caps=(True, False))
+    mesh = face_blocks.mesh("FaceSurface_Mesh", [face_material()])
+    face = bpy.data.objects.new("FaceSurface", mesh)
+    bpy.context.collection.objects.link(face)
+    uv = mesh.uv_layers.new(name="FaceUV")
+    for loop in mesh.loops:
+        co = mesh.vertices[loop.vertex_index].co
+        uv.data[loop.index].uv = (max(0, min(1, .5 + co.x / .328)),
+                                  max(0, min(1, .5 + (co.z - center_z) / .332)))
+    face_blocks.skin(face)
+    modifier = face.modifiers.new("Dog_Skin", "ARMATURE")
     modifier.object = rig
-    surface.parent = rig
-    surface["custom_face_surface"] = True
-    surface["face_layout_version"] = 1
-    surface["uv_contract"] = "full texture rectangle, U left-to-right, V bottom-to-top"
-    surface["design"] = "zero-thickness facial polygons extracted from the dog head"
+    face.parent = rig
+    face["custom_face_surface"] = True
+    face["face_layout_version"] = 1
+    return face
 
-    bm = bmesh.new()
-    bm.from_mesh(source)
-    removed = [face for face in bm.faces if is_face_point(face.calc_center_median())]
-    bmesh.ops.delete(bm, geom=removed, context="FACES")
-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
-    bm.to_mesh(source)
-    bm.free()
-    source.update()
-    return surface, len(removed)
 
 
 def export_character(body, face, rig):
@@ -177,11 +357,7 @@ def main():
     body = next(obj for obj in bpy.data.objects if obj.type == "MESH" and obj.find_armature())
     rig = body.find_armature()
     body.name = "BlankFaceDog_Body"
-    body.data.name = "BlankFaceDog_BodyMesh"
-    relink_texture("Dog_BaseColor", "Dog_BaseColor.png")
-    relink_texture("Dog_Normal", "Dog_Normal.png", True)
-    face, removed_faces = extract_face_surface(body, rig)
-    body["design"] = "dog body with facial polygons extracted as a replaceable surface"
+    face = make_dog(body, rig)
     body["face_layout_version"] = 1
     rig["animation_notes"] = "27-bone quadruped; seven baked clips; face surface follows Head"
     for action in bpy.data.actions:
@@ -197,12 +373,11 @@ def main():
         "face_vertices": len(face.data.vertices),
         "vertices_total": len(body.data.vertices) + len(face.data.vertices),
         "triangles_total": len(body.data.loop_triangles) + len(face.data.loop_triangles),
-        "extracted_face_polygons": removed_faces,
         "bones": len(rig.data.bones),
         "face_layout_version": 1,
         "face_uv": "0..1 full rectangle",
         "clips": {name: list(bpy.data.actions[name].frame_range) for name in CLIPS},
-        "limitations": "face is rigid on Head; Bark/Bite move the head and jaw but do not deform the 2D player image",
+        "limitations": "face is rigid on Head; Bark/Bite move the head while the player image stays rigid",
     }
     (ROOT / "asset_report.json").write_text(json.dumps(stats, indent=2), encoding="utf-8")
 
@@ -210,10 +385,9 @@ def main():
     render_views(rig)
     rig.animation_data.action = bpy.data.actions["Idle"]
     bpy.context.scene.frame_set(1)
-    for image in bpy.data.images:
-        if image.name.startswith(("Dog_BaseColor", "Dog_Normal", "BlankFace_Default")):
-            image.pack()
-    active(rig)
+    bpy.data.images["BlankFace_Default"].filepath = "//BlankFace_Default.png"
+    bpy.context.scene.render.filepath = "//../previews/hero.png"
+    bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(MODEL / "BlankFaceDog_Rigged.blend"))
     print("BLANK_FACE_DOG_COMPLETE", json.dumps(stats), flush=True)
 

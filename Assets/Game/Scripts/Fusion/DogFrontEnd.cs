@@ -6,7 +6,6 @@ using DogSimulator.Player;
 using DogSimulator.UI;
 using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace DogSimulator.Networking
 {
@@ -18,25 +17,28 @@ namespace DogSimulator.Networking
         private enum Page { Home, Prepare, Hub, Face, Gameplay }
         private enum Launch { SinglePlayer, Create, Join }
         private readonly Dictionary<Page, CanvasGroup> pages = new();
-        private FusionSessionService session;
-        private DogSelectionPreview preview;
-        private FpsHud fps;
-        private DogMenuSkin skin;
+        [SerializeField] private FusionSessionService session;
+        [SerializeField] private DogSelectionPreview preview;
+        [SerializeField] private FpsHud fps;
+        [SerializeField] private DogMenuSkin skin;
         private CanvasGroup activePage;
-        private CanvasGroup settings;
-        private GameObject yard;
+        [SerializeField] private CanvasGroup settings;
+        [SerializeField] private GameObject yard;
+        [SerializeField] private CanvasGroup[] authoredPages;
+#if UNITY_EDITOR
         private RectTransform stage;
-        private TMP_InputField nickname;
-        private TMP_InputField roomCode;
-        private TMP_Text prepareMessage;
-        private TMP_Text hubMessage;
-        private UnityEngine.UI.Button continueButton;
-        private UnityEngine.UI.Button cancelConnectionButton;
-        private UnityEngine.UI.Image homeDog;
-        private UnityEngine.UI.RawImage selectedDog;
-        private UnityEngine.UI.RawImage faceDog;
-        private UnityEngine.UI.RawImage faceCanvas;
-        private DogFaceEditorController faceEditor;
+#endif
+        [SerializeField] private TMP_InputField nickname;
+        [SerializeField] private TMP_InputField roomCode;
+        [SerializeField] private TMP_Text prepareMessage;
+        [SerializeField] private TMP_Text hubMessage;
+        [SerializeField] private UnityEngine.UI.Button continueButton;
+        [SerializeField] private UnityEngine.UI.Button cancelConnectionButton;
+        [SerializeField] private UnityEngine.UI.Image homeDog;
+        [SerializeField] private UnityEngine.UI.RawImage selectedDog;
+        [SerializeField] private UnityEngine.UI.RawImage faceDog;
+        [SerializeField] private UnityEngine.UI.RawImage faceCanvas;
+        [SerializeField] private DogFaceEditorController faceEditor;
         private Page page;
         private Launch launch;
         private string pendingCode;
@@ -55,9 +57,17 @@ namespace DogSimulator.Networking
 
         private void Start()
         {
-            if (session == null || preview == null) return;
-            skin = new DogMenuSkin();
-            BuildLayout();
+            if (session == null || preview == null || authoredPages == null || authoredPages.Length != 5)
+            {
+                Debug.LogError("Dog menu layout is missing. Run the Editor-first migration.", this);
+                enabled = false;
+                return;
+            }
+            for (var i = 0; i < authoredPages.Length; i++) pages.Add((Page)i, authoredPages[i]);
+            nickname.SetTextWithoutNotify(PlayerPrefs.GetString(NicknameKey, "Guest"));
+            settingsHint.text = WithKey(SettingsKey?.shortDisplayName ?? SettingsKey?.displayName, "Settings");
+            BindSettings();
+            BindFaceTools();
             foreach (var group in pages.Values) group.gameObject.SetActive(false);
             var saved = PlayerPrefs.GetInt(ModelKey, session.ModelCatalog.FallbackModelId);
             for (var i = 0; i < session.ModelCatalog.Entries.Count; i++)
@@ -279,12 +289,12 @@ namespace DogSimulator.Networking
 
         private void Update()
         {
-            if (skin == null) return;
+            if (activePage == null) return;
             var delta = Time.unscaledDeltaTime * 6.5f;
             activePage.alpha = Mathf.MoveTowards(activePage.alpha, 1, delta);
             if (page == Page.Prepare) prepareStatusStrip.SetActive(!string.IsNullOrEmpty(prepareMessage.text));
             if (settings.gameObject.activeSelf) settings.alpha = Mathf.MoveTowards(settings.alpha, 1, delta);
-            var escape = Keyboard.current?.escapeKey.wasPressedThisFrame == true;
+            var escape = SettingsKey?.wasPressedThisFrame == true;
             if (playing && (escape || Cursor.lockState != CursorLockMode.Locked)) PauseGame();
             else if (escape && settings.gameObject.activeSelf && !leaving) CloseSettings();
             else if (escape && page == Page.Face) faceEditor.Close();
@@ -303,7 +313,6 @@ namespace DogSimulator.Networking
                 session.RoomsChanged -= OnRoomListChanged;
                 session.SetControlsEnabled(false);
             }
-            skin?.Dispose();
             UnlockCursor();
         }
     }

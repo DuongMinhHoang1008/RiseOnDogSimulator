@@ -10,7 +10,7 @@ namespace DogSimulator.Player
         public const float PeeCooldownSeconds = 10f;
         [SerializeField] private DogAnimationConfig config;
         [SerializeField] private DogVisualPresenter visual;
-        private DogMotor motor;
+        [SerializeField] private DogMotor motor;
         public float PoopCooldown { get; private set; }
         public float PeeCooldown { get; private set; }
         public DogAction CurrentAction { get; private set; }
@@ -19,7 +19,6 @@ namespace DogSimulator.Player
         public float NormalizedSpeed { get; private set; }
         public DogVisualPresenter Visual => visual;
 
-        private void Awake() => motor = GetComponent<DogMotor>();
 
         public void ApplyModel(DogModelCatalog catalog, int modelId) => visual?.ApplyModel(catalog, modelId);
 

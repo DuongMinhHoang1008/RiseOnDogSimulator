@@ -1,4 +1,3 @@
-using System;
 using DogSimulator.Player;
 using Fusion;
 using UnityEngine;
@@ -55,7 +54,7 @@ namespace DogSimulator.Networking
 
         private ModelSelectionResult ValidateAndReserve(PlayerRef player, int modelId)
         {
-            if (catalog == null || !catalog.IsValidModelId(modelId)) return ModelSelectionResult.InvalidModel;
+            if (!DogModelReservationRules.IsValidModel(catalog, modelId)) return ModelSelectionResult.InvalidModel;
             var active = false;
             foreach (var candidate in Runner.ActivePlayers)
             {

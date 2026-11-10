@@ -1,0 +1,163 @@
+{
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "ChihuahuaF0194_Body",
+      "vertices": 304,
+      "triangles": 542,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
+      "name": "FaceSurface",
+      "vertices": 45,
+      "triangles": 60,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "BlankFace_Default.png",
+      "size": [
+        512,
+        512
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        1.0,
+        61.0
+      ],
+      "duration_seconds": 2.0,
+      "sampled_max_vertex_motion": 0.03078168059790441,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        1.0,
+        25.0
+      ],
+      "duration_seconds": 0.8,
+      "sampled_max_vertex_motion": 0.19800006945385085,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        1.0,
+        43.0
+      ],
+      "duration_seconds": 1.4,
+      "sampled_max_vertex_motion": 0.3131640898449775,
+      "loop_endpoint_delta": 0.0043725254875667495
+    },
+    "Bark": {
+      "frames": [
+        1.0,
+        37.0
+      ],
+      "duration_seconds": 1.2,
+      "sampled_max_vertex_motion": 0.0470814515656256,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        1.0,
+        28.0
+      ],
+      "duration_seconds": 0.9,
+      "sampled_max_vertex_motion": 0.1108138852506663,
+      "loop_endpoint_delta": 3.2502243917576744e-05
+    },
+    "Poop": {
+      "frames": [
+        1.0,
+        109.0
+      ],
+      "duration_seconds": 3.6,
+      "sampled_max_vertex_motion": 0.13462323003659182,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        1.0,
+        97.0
+      ],
+      "duration_seconds": 3.2,
+      "sampled_max_vertex_motion": 0.3967597740770272,
+      "loop_endpoint_delta": 0.0
+    }
+  },
+  "vertices": 349,
+  "triangles": 602,
+  "max_influences": 4,
+  "custom_face": {
+    "matched_positions": 30,
+    "seam_gap_per_clip": {
+      "Bark": 0.0,
+      "Bite": 0.0,
+      "Idle": 0.0,
+      "Jump": 0.0,
+      "Pee": 0.0,
+      "Poop": 0.0,
+      "Run": 0.0
+    },
+    "mouth_and_ground_per_clip": {
+      "Bark": {
+        "max_opening": 0.03087892660162419,
+        "peak_frame": 24,
+        "lowest_mesh_z": 0.002055143238976598,
+        "highest_ground_clearance": 0.0020554657094180584
+      },
+      "Bite": {
+        "max_opening": 0.03817570443554531,
+        "peak_frame": 11,
+        "lowest_mesh_z": 0.0020552624482661486,
+        "highest_ground_clearance": 0.0020554407965391874
+      },
+      "Idle": {
+        "max_opening": 0.003857995656606194,
+        "peak_frame": 57,
+        "lowest_mesh_z": 0.002055266872048378,
+        "highest_ground_clearance": 0.0020555248484015465
+      },
+      "Jump": {
+        "max_opening": 0.0038580179885604,
+        "peak_frame": 23,
+        "lowest_mesh_z": 0.0020552414935082197,
+        "highest_ground_clearance": 0.29355549812316895
+      },
+      "Pee": {
+        "max_opening": 0.003857974723318188,
+        "peak_frame": 9,
+        "lowest_mesh_z": 0.0020551367197185755,
+        "highest_ground_clearance": 0.0020556338131427765
+      },
+      "Poop": {
+        "max_opening": 0.003857972902747273,
+        "peak_frame": 11,
+        "lowest_mesh_z": 0.0020550484769046307,
+        "highest_ground_clearance": 0.002055471297353506
+      },
+      "Run": {
+        "max_opening": 0.0038579869884369823,
+        "peak_frame": 8,
+        "lowest_mesh_z": 0.0020550829358398914,
+        "highest_ground_clearance": 0.0020556587260216475
+      }
+    },
+    "upper_lip_v": 0.18933527171611786,
+    "solid_512_png": true,
+    "front_uv_0_to_1": true
+  }
+}

@@ -26,6 +26,7 @@ namespace DogSimulator.Networking
 
         internal const string OwnerLeftMessage = "The room closed because its owner left.";
         private readonly List<RoomListing> rooms = new();
+        [SerializeField] private FusionRunnerRoot lobbyRunnerPrefab;
         private NetworkRunner lobbyRunner;
         private Task lobbyOperation = Task.CompletedTask;
         private CancellationTokenSource lobbyCancellation;
@@ -65,7 +66,7 @@ namespace DogSimulator.Networking
             if (old != null) await ShutdownRunnerAsync(old);
             if (destroyed || generation != lobbyGeneration || !enable) return;
 
-            if (config == null || !config.IsValid || !TryGetPhotonSettings(out var settings))
+            if (lobbyRunnerPrefab == null || config == null || !config.IsValid || !TryGetPhotonSettings(out var settings))
             {
                 UpdateRoomList("Room list unavailable. Check the Photon settings.");
                 return;
@@ -75,13 +76,13 @@ namespace DogSimulator.Networking
             lobbyDeadline = Time.realtimeSinceStartup + config.ConnectionTimeoutSeconds;
             try
             {
-                var root = new GameObject("Fusion Runner — Room List");
-                lobbyRunner = root.AddComponent<NetworkRunner>();
+                var runtime = Instantiate(lobbyRunnerPrefab);
+                lobbyRunner = runtime.Runner;
                 activeLobbyGeneration = generation;
-                var events = root.AddComponent<NetworkEvents>();
-                events.OnSessionListUpdate = new NetworkEvents.SessionListUpdateEvent();
+                var events = runtime.Events;
+                events.OnSessionListUpdate ??= new NetworkEvents.SessionListUpdateEvent();
                 events.OnSessionListUpdate.AddListener(OnRoomListUpdated);
-                events.OnShutdown = new NetworkEvents.ShutdownEvent();
+                events.OnShutdown ??= new NetworkEvents.ShutdownEvent();
                 events.OnShutdown.AddListener(OnLobbyShutdown);
                 lobbyRunner.AddCallbacks(events);
                 var result = await lobbyRunner.JoinSessionLobby(SessionLobby.ClientServer,

@@ -13,6 +13,8 @@ namespace DogSimulator.Player
             [SerializeField, Min(1)] private int modelId;
             [SerializeField] private string displayName;
             [SerializeField] private GameObject visualPrefab;
+            [SerializeField] private DogModelVisual visual;
+            internal DogModelVisual Visual => visual;
             [SerializeField] private RuntimeAnimatorController animationController;
             [SerializeField] private Vector3 localPosition;
             [SerializeField] private Vector3 localEulerAngles;

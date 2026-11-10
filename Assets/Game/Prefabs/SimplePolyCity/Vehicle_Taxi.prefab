@@ -107,7 +107,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2909034691582879355}
   serializedVersion: 5
-  m_Mass: 4740.4067
+  m_Mass: 7110.6104
   m_LinearDamping: 0.06
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -293,6 +293,10 @@ MonoBehaviour:
     Raw: 0
   _IsTraffic:
     RawValue: 0
+  body: {fileID: 7587200855765695932}
+  transformSync: {fileID: 1120091734143146223}
+  obstacle: {fileID: 4713544411901147806}
+  hull: {fileID: 2852700655132924054}
 --- !u!208 &4713544411901147806
 NavMeshObstacle:
   m_ObjectHideFlags: 0

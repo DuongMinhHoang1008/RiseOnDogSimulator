@@ -15,14 +15,29 @@ namespace DogSimulator.Editor
     {
         private const string NavMeshPath = "Assets/Game/Config/SimplePolyCityNavMesh.asset";
 
-        private static void BakePedestrianNavMesh()
+        private static NavMeshSurface BakePedestrianNavMesh()
         {
             var surface = new GameObject("City Pedestrian Navigation").AddComponent<NavMeshSurface>();
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
             surface.collectObjects = CollectObjects.All;
             surface.BuildNavMesh();
             if (surface.navMeshData == null) throw new InvalidOperationException("Could not bake the city NavMesh.");
-            AssetDatabase.CreateAsset(surface.navMeshData, NavMeshPath);
+            return surface;
+        }
+
+        private static void SavePedestrianNavMesh(NavMeshSurface surface)
+        {
+            var data = AssetDatabase.LoadAssetAtPath<NavMeshData>(NavMeshPath);
+            if (data == null)
+                AssetDatabase.CreateAsset(surface.navMeshData, NavMeshPath);
+            else
+            {
+                EditorUtility.CopySerialized(surface.navMeshData, data);
+                Object.DestroyImmediate(surface.navMeshData);
+                surface.navMeshData = data;
+                EditorUtility.SetDirty(data);
+            }
+            surface.AddData();
         }
 
         private static void AddPlayProps(List<SimplePolyCityWorld.Placement> props, List<Vector3> spawns,
@@ -92,7 +107,7 @@ namespace DogSimulator.Editor
         {
             var locations = new[]
             {
-                new Vector3(213, 0, 102), new Vector3(41, 0, 96), new Vector3(132, 0, 132),
+                new Vector3(212, 0, 107), new Vector3(41, 0, 96), new Vector3(132, 0, 132),
                 new Vector3(208, 0, 33), new Vector3(22, 0, 53)
             };
             var prefab = CreatePedestrianPrefab();
@@ -101,13 +116,38 @@ namespace DogSimulator.Editor
             array.arraySize = locations.Length;
             for (var i = 0; i < locations.Length; i++)
             {
-                var route = FindPatrol(locations[i], vehicles);
-                var entry = array.GetArrayElementAtIndex(i);
-                entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
-                entry.FindPropertyRelative("start").vector3Value = route.start;
-                entry.FindPropertyRelative("end").vector3Value = route.end;
+                WritePatrol(array.GetArrayElementAtIndex(i), prefab, FindPatrol(locations[i], vehicles));
             }
             data.ApplyModifiedPropertiesWithoutUndo();
+            AppendNeighborhoodPatrols(world);
+        }
+
+        private static void AppendNeighborhoodPatrols(SimplePolyCityWorld world)
+        {
+            var locations = new[]
+            {
+                new Vector3(88, 0, 137), new Vector3(107, 0, 146), new Vector3(141, 0, 135),
+                new Vector3(167, 0, 144), new Vector3(190, 0, 122), new Vector3(113, 0, 167),
+                new Vector3(156, 0, 171), new Vector3(193, 0, 167), new Vector3(75, 0, 93),
+                new Vector3(153, 0, 57), new Vector3(74, 0, 185)
+            };
+            var vehicles = world.Vehicles.ToList();
+            var prefab = world.Pedestrians[0].prefab;
+            var routes = locations.Select(location => FindPatrol(location, vehicles)).ToArray();
+            var data = new SerializedObject(world);
+            var array = data.FindProperty("pedestrians");
+            var first = array.arraySize;
+            array.arraySize += routes.Length;
+            for (var i = 0; i < routes.Length; i++)
+                WritePatrol(array.GetArrayElementAtIndex(first + i), prefab, routes[i]);
+            data.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void WritePatrol(SerializedProperty entry, NetworkObject prefab, (Vector3 start, Vector3 end) route)
+        {
+            entry.FindPropertyRelative("prefab").objectReferenceValue = prefab;
+            entry.FindPropertyRelative("start").vector3Value = route.start;
+            entry.FindPropertyRelative("end").vector3Value = route.end;
         }
 
         private static (Vector3 start, Vector3 end) FindPatrol(Vector3 center,

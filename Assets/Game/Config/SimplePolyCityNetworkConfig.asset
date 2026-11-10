@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FusionNetworkConfig
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.Networking.NetworkConfig
   region: asia
-  gameVersion: simplepoly-city-v2
+  gameVersion: simplepoly-city-v4
   maxPlayers: 8
   createAttempts: 3
   connectionTimeoutSeconds: 20

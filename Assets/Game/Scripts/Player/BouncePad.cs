@@ -7,5 +7,6 @@ namespace DogSimulator.Player
     {
         [SerializeField, Min(1f)] private float bounceSpeed = 11f;
         public float BounceSpeed => bounceSpeed;
+        [field: SerializeField] public bool CushionLanding { get; set; }
     }
 }

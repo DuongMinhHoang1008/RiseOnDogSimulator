@@ -1,0 +1,99 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &5528852932775663688
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4110524706148567708, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 56db9d90515f8c243a40c44ad5f660c5, type: 2}
+    - target: {fileID: -4110524706148567708, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: b6519cb87e7291b41980a3209cb83a29, type: 2}
+    - target: {fileID: 919132149155446097, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: m_Name
+      value: MrDogBoxy
+      objectReference: {fileID: 0}
+    - target: {fileID: 1101233463834898832, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 33fc76154ec416f49aab27dbfa120154, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -7275759953170292086, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3418893998108766381}
+  m_SourcePrefab: {fileID: 100100000, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+--- !u!137 &4896029016254753240 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1101233463834898832, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+  m_PrefabInstance: {fileID: 5528852932775663688}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6322245375159564994 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -7275759953170292086, guid: bd44d15eac0e6924ea139a052732b49b, type: 3}
+  m_PrefabInstance: {fileID: 5528852932775663688}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3418893998108766381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6322245375159564994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e3b5eb5bc0bf264091a175421b74b3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.CustomDogFace.DogFaceSurface
+  targetRenderer: {fileID: 4896029016254753240}
+  layoutVersion: 1
+  portraitMaterial: {fileID: 2100000, guid: b5e5bedb1a648d1418db847d1856b8d1, type: 2}

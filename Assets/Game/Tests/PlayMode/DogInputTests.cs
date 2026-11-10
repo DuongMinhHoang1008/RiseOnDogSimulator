@@ -101,6 +101,22 @@ namespace DogSimulator.Tests
         }
 
         [UnityTest]
+        public IEnumerator SimultaneousButtonsKeepIndependentCommandsAndExistingActionPriority()
+        {
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F, Key.G, Key.H, Key.F6, Key.F7));
+            InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Right));
+            yield return null;
+            yield return null;
+
+            Assert.That(reader.ConsumeAction(), Is.EqualTo(DogAction.Bite));
+            Assert.That(reader.ConsumeAction(), Is.EqualTo(DogAction.None));
+            Assert.That(reader.ConsumeRespawnBone(), Is.True);
+            Assert.That(reader.ConsumeRespawnBone(), Is.False);
+            Assert.That(reader.ConsumeResetMission(), Is.True);
+            Assert.That(reader.ConsumeResetMission(), Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator CarryAndResetInputsAreBufferedAndConsumedOnce()
         {
             InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
@@ -123,6 +139,16 @@ namespace DogSimulator.Tests
             yield return null;
             Assert.That(reader.ConsumeResetYard(), Is.True);
             Assert.That(reader.ConsumeResetYard(), Is.False);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F6));
+            yield return null;
+            yield return null;
+            Assert.That(reader.ConsumeRespawnBone(), Is.True);
+            Assert.That(reader.ConsumeRespawnBone(), Is.False);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.F7));
+            yield return null;
+            yield return null;
+            Assert.That(reader.ConsumeResetMission(), Is.True);
+            Assert.That(reader.ConsumeResetMission(), Is.False);
         }
     }
 }

@@ -1,6 +1,6 @@
 # Blank Face Dog
 
-Model chó dành cho hệ thống mặt người chơi. `FaceSurface` được tách trực tiếp từ các polygon cong của đầu chó gốc và lấp đúng lỗ trên mesh thân. Bề mặt không có độ dày, không offset ra phía trước và có UV riêng để nhận JPEG 512 × 512 ở runtime.
+Model chó hình khối dùng cho hệ thống mặt người chơi. Thân và chân giữ các mảng phẳng lớn, với bevel nhỏ ở cạnh và normal có trọng số trên dải vát. Đuôi giữ dáng cong, dùng thêm các vòng chuyển ở chỗ gập và pha trọng số xương khi vẫy. `FaceSurface` gồm mặt trước và các mặt vát của đầu, dùng chung đường viền tám đỉnh với phần đầu còn lại và có UV riêng để nhận JPEG 512 × 512 ở runtime.
 
 ## Asset chính
 
@@ -19,21 +19,18 @@ Model chó dành cho hệ thống mặt người chơi. `FaceSurface` được t
 - Mép `FaceSurface` dùng chung vị trí vertex với vùng đầu đã tách, nên silhouette chính diện/nghiêng liên tục và không có khối chắn phía trước.
 - `faceLayoutVersion = 1`, khớp `CustomDogFaceConstants.LayoutVersion`.
 - Prefab có `DogFaceSurface.targetRenderer` trỏ thẳng tới renderer của `FaceSurface`.
-- Catalog ID: `1101`, tên hiển thị `Blank Face Dog`, `supportsCustomFace = true`. Đây là model custom-face duy nhất; ID được giữ ổn định để tương thích dữ liệu và phòng đã có.
+- Catalog ID: `1101`, tên hiển thị `Blank Face Dog`, `supportsCustomFace = true`. ID được giữ ổn định để tương thích dữ liệu và phòng đã có.
 
 ## Rig và animation
 
-Model có 27 xương và các clip `Idle`, `Run`, `Jump`, `Bark`, `Poop`, `Pee`, `Bite`. Vùng mặt bám 100% vào xương `Head`, nên ổn định khi chạy và nhảy. Ảnh 2D vẫn cứng theo đầu: Bark/Bite chuyển động đầu và xương hàm nhưng không làm biến dạng miệng trong ảnh người chơi.
+Model giữ 27 xương và các clip `Idle`, `Run`, `Jump`, `Bark`, `Poop`, `Pee`, `Bite`. Vùng mặt bám 100% vào xương `Head`. Ảnh người chơi đi theo khối đầu khi chạy, nhảy, sủa và cắn.
 
 ## Thống kê và kiểm tra
 
-- 6.359 vertex hình học, 12.526 triangle trong source trước khi exporter tách UV/normal.
-- Tối đa 4 influence/vertex; không có vertex mất weight.
-- Validator PASS cho `.blend`, `.fbx`, `.glb`, không warning.
-- EditMode: `CustomDogFaceTests` 6/6 PASS; `M2CatalogReservationTests` 3/3 PASS.
-- Unity Console sạch sau khi tạo prefab và chạy runtime texture probe.
+- 696 đỉnh hình học và 1.296 tam giác trong source. GLB có 2.448 đỉnh sau khi tách cạnh theo normal và UV.
+- Các đoạn thân, chân và mặt giữ một influence mỗi đỉnh. Vùng chuyển của đuôi có tối đa ba influence. Validator pass cho BLEND, FBX và GLB.
 
-Để dựng lại toàn bộ tích hợp sau khi thay FBX, chạy menu `Tools > Dog Simulator > Custom Face > Apply Custom Face with BlankFaceDog`. Chỉ đăng ký lại riêng model bằng menu `Register Blank Face Art Model`.
+Để dựng lại model và render, chạy `scripts/build_blank_face_dog.py` bằng Blender ở chế độ background. Bản hình khối giữ prefab, catalog và controller hiện có. Sau khi Unity import FBX, chạy `CustomDogFaceTests` để kiểm tra tham chiếu và texture mặt.
 
 ## Tài liệu tái sử dụng
 

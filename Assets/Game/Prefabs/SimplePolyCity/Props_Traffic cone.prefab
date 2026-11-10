@@ -181,6 +181,15 @@ MonoBehaviour:
     RawValue: 0
   _ImpactForcesKnockdown:
     RawValue: 0
+  body: {fileID: 5448561114465421248}
+  transformSync: {fileID: 679097265584864375}
+  goldenRenderers:
+  - {fileID: 5987043837358527478}
+  colliders:
+  - {fileID: 6703712741424668220}
+  bowlVisual: {fileID: 0}
+  crateRenderer: {fileID: 0}
+  crateCollider: {fileID: 0}
 --- !u!1001 &5987043837356362646
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -241,5 +250,10 @@ PrefabInstance:
 --- !u!4 &5987043837356757270 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 52f3bf47c9c62af4588469ff668b805c, type: 3}
+  m_PrefabInstance: {fileID: 5987043837356362646}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5987043837358527478 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2300000, guid: 52f3bf47c9c62af4588469ff668b805c, type: 3}
   m_PrefabInstance: {fileID: 5987043837356362646}
   m_PrefabAsset: {fileID: 0}

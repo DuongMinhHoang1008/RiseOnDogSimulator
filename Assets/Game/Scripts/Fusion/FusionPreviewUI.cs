@@ -25,6 +25,10 @@ namespace DogSimulator.Networking
         [SerializeField] private UnityEngine.UI.Button copyButton;
         [SerializeField] private UnityEngine.UI.Button editFaceButton;
         [SerializeField] private DogFaceEditorController faceEditor;
+        [SerializeField] private TMP_Text controls;
+        [SerializeField] private TMP_Text networkSettings;
+        [SerializeField] private DogFrontEnd frontEnd;
+        [SerializeField] private CanvasGroup legacyMenu;
         private bool playing;
         private float nextHudUpdate;
         private bool suppressModelChange;
@@ -34,23 +38,19 @@ namespace DogSimulator.Networking
         private void Awake()
         {
             // Older generated preview scenes still use the diagnostic UI.
-            if (faceEditor != null && selectionPreview != null && session.ModelCatalog != null)
+            if (frontEnd != null)
             {
                 // The selection camera driver lives under this panel and remains active.
-                var legacyMenu = menu.AddComponent<CanvasGroup>();
                 legacyMenu.alpha = 0;
                 legacyMenu.interactable = legacyMenu.blocksRaycasts = false;
                 hud.SetActive(false);
                 useFrontEnd = true;
-                gameObject.AddComponent<DogFrontEnd>().Bind(session, selectionPreview, GetComponent<FpsHud>());
                 return;
             }
             nickname.richText = roomCode.richText = false;
-            foreach (var text in GetComponentsInChildren<TMP_Text>(true))
-            {
-                if (text.name == "Controls") text.text = DogAnimationDriver.Controls;
-                if (text.name == "NetworkSettings") text.text = $"Region: {session.Region} | Capacity: {session.Capacity} | {session.GameVersion}";
-            }
+            if (controls != null) controls.text = DogAnimationDriver.Controls;
+            if (networkSettings != null)
+                networkSettings.text = $"Region: {session.Region} | Capacity: {session.Capacity} | {session.GameVersion}";
             nickname.text = PlayerPrefs.GetString("DogSimulator.Nickname", "Guest");
             PopulateModels();
             selectionPreview?.ShowModel(SelectedModelId());

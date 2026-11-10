@@ -15,7 +15,9 @@ namespace DogSimulator.Player
         private int renderedSequence = int.MinValue;
         private int renderedModelId = int.MinValue;
         private DogAction renderedAction;
-        private GameObject instantiatedVisual;
+        [SerializeField] private DogFaceSurface defaultFaceSurface;
+        [SerializeField] private Transform defaultPeePelvis;
+        private DogModelVisual instantiatedVisual;
         private Quaternion standingRotation;
         private bool hasStandingRotation;
         private bool wasKnockedDown;
@@ -23,7 +25,8 @@ namespace DogSimulator.Player
         private float knockdownSide = 1f;
         private const float KnockdownTilt = 82f;
         private const float FallDuration = .35f;
-        public Animator Animator => animator;
+        public Animator Animator => instantiatedVisual != null ? instantiatedVisual.Animator : animator;
+        public Transform PeePelvis => instantiatedVisual != null ? instantiatedVisual.PeePelvis : defaultPeePelvis;
         public DogAction RenderedAction => renderedAction;
         public int RenderedModelId => renderedModelId;
         public DogFaceSurface FaceSurface { get; private set; }
@@ -66,45 +69,48 @@ namespace DogSimulator.Player
             if (entry == null) return;
             renderedModelId = modelId;
             renderedSequence = int.MinValue;
-            if (instantiatedVisual != null) Destroy(instantiatedVisual);
+            if (instantiatedVisual != null)
+            {
+                instantiatedVisual.gameObject.SetActive(false);
+                Destroy(instantiatedVisual.gameObject);
+            }
             instantiatedVisual = null;
+
             if (entry.VisualPrefab == null)
             {
                 if (defaultVisual != null) defaultVisual.SetActive(true);
-                animator = defaultVisual != null ? defaultVisual.GetComponentInChildren<Animator>(true) : animator;
             }
             else
             {
-                if (defaultVisual != null) defaultVisual.SetActive(false);
-                var parent = visualRoot != null ? visualRoot : transform;
-                instantiatedVisual = InstantiateVisual(entry, parent);
-                instantiatedVisual.name = $"DogModel_{entry.ModelId}_{entry.DisplayName}";
-                SetLayerRecursively(instantiatedVisual.transform, parent.gameObject.layer);
-                animator = instantiatedVisual.GetComponentInChildren<Animator>(true);
-                if (animator == null) animator = instantiatedVisual.AddComponent<Animator>();
-                if (entry.AnimationController != null) animator.runtimeAnimatorController = entry.AnimationController;
-                animator.applyRootMotion = false;
-                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-                animator.Rebind();
-                animator.Update(0f);
+                InstallModelVisual(entry);
             }
+
             if (mouthAnchor != null) mouthAnchor.localPosition = entry.MouthAnchor;
-            FaceSurface = instantiatedVisual != null
-                ? instantiatedVisual.GetComponentInChildren<DogFaceSurface>(true)
-                : defaultVisual != null ? defaultVisual.GetComponentInChildren<DogFaceSurface>(true) : null;
+            FaceSurface = instantiatedVisual != null ? instantiatedVisual.FaceSurface : defaultFaceSurface;
             VisualChanged?.Invoke();
         }
 
-        internal static GameObject InstantiateVisual(DogModelCatalog.Entry entry, Transform parent)
+        private void InstallModelVisual(DogModelCatalog.Entry entry)
         {
-            var visual = Instantiate(entry.VisualPrefab, parent, false);
+            if (defaultVisual != null) defaultVisual.SetActive(false);
+            var parent = visualRoot != null ? visualRoot : transform;
+            instantiatedVisual = InstantiateVisual(entry, parent);
+            instantiatedVisual.name = $"DogModel_{entry.ModelId}_{entry.DisplayName}";
+            SetLayerRecursively(instantiatedVisual.transform, parent.gameObject.layer);
+            var animator = instantiatedVisual.Animator;
+            if (entry.AnimationController != null) animator.runtimeAnimatorController = entry.AnimationController;
+            animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            animator.Rebind();
+            animator.Update(0f);
+        }
+
+        internal static DogModelVisual InstantiateVisual(DogModelCatalog.Entry entry, Transform parent)
+        {
+            var visual = Instantiate(entry.Visual, parent, false);
             visual.transform.SetLocalPositionAndRotation(entry.LocalPosition, entry.LocalRotation);
             visual.transform.localScale = entry.LocalScale;
-            foreach (var behaviour in visual.GetComponentsInChildren<MonoBehaviour>(true))
-            {
-                if (behaviour != null && behaviour.GetType().FullName == "ReferenceDog.Animation.ReferenceDogAnimationPreview")
-                    behaviour.enabled = false;
-            }
+            visual.DisableDemos();
             return visual;
         }
 
@@ -116,6 +122,7 @@ namespace DogSimulator.Player
 
         public void Present(float speed, bool grounded, DogAction action, int sequence, float remainingSeconds)
         {
+            var animator = Animator;
             if (animator == null || config == null || !animator.isActiveAndEnabled) return;
             speed = Mathf.Clamp01(speed);
             animator.SetFloat("Speed", speed);

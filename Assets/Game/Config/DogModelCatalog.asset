@@ -12,35 +12,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7fbbaea1079d9c4b92753ef8b09df93, type: 3}
   m_Name: DogModelCatalog
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.Player.DogModelCatalog
-  fallbackModelId: 1
+  fallbackModelId: 1104
   entries:
-  - modelId: 1
-    displayName: Reference Dog (fallback)
-    visualPrefab: {fileID: 7841334188895361824, guid: 180fe33efb57edd47a9216a681dc9425, type: 3}
-    animationController: {fileID: 22100000, guid: cf32b6d3f48cc6a43ab5d1affa9dbc31, type: 2}
+  - modelId: 1104
+    displayName: Tan Muzzle Dog
+    visualPrefab: {fileID: 6484353009666521048, guid: 5cf63d0be6ff56e4fa0041bd83d4b620, type: 3}
+    visual: {fileID: 4269777237100370599, guid: 5cf63d0be6ff56e4fa0041bd83d4b620, type: 3}
+    animationController: {fileID: 22100000, guid: 6e99c4a77fb201a4e962aeece9d24b9c, type: 2}
     localPosition: {x: 0, y: 0, z: 0}
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
-    mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    mouthAnchor: {x: 0, y: 0.7649999, z: 0.6639998}
     supportsCustomFace: 1
     faceLayoutVersion: 1
-  - modelId: 1001
-    displayName: Photo Dog
-    visualPrefab: {fileID: 682369979944599101, guid: a9bcf1e593562244baf0d9828a94963c, type: 3}
-    animationController: {fileID: 22100000, guid: 17a69222cb56fdc46b5c25a8ee2e5ae8, type: 2}
+  - modelId: 1105
+    displayName: Chihuahua F0194
+    visualPrefab: {fileID: 8478257285527044637, guid: 5aa3e937902491c4688cdbe4c104998f, type: 3}
+    visual: {fileID: 8430756598110239365, guid: 5aa3e937902491c4688cdbe4c104998f, type: 3}
+    animationController: {fileID: 22100000, guid: 888651abb5cffe344ba1a640659b5235, type: 2}
     localPosition: {x: 0, y: 0, z: 0}
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
-    mouthAnchor: {x: 0, y: 0.8, z: 0.6}
-    supportsCustomFace: 1
-    faceLayoutVersion: 1
-  - modelId: 1101
-    displayName: Blank Face Dog
-    visualPrefab: {fileID: 8689223503430754587, guid: de39fae12fc1ae341895a3458bc6890d, type: 3}
-    animationController: {fileID: 22100000, guid: 3200457d4b63475488adbb09e84e1b32, type: 2}
-    localPosition: {x: 0, y: 0, z: 0}
-    localEulerAngles: {x: 0, y: 0, z: 0}
-    localScale: {x: 1, y: 1, z: 1}
-    mouthAnchor: {x: 0, y: 0.8, z: 0.6}
+    mouthAnchor: {x: 0, y: 0.79388195, z: 0.62107694}
     supportsCustomFace: 1
     faceLayoutVersion: 1

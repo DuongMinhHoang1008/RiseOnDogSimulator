@@ -8,16 +8,16 @@
   "meshes": [
     {
       "name": "BlankFaceDog_Body",
-      "vertices": 5828,
-      "triangles": 11592,
+      "vertices": 680,
+      "triangles": 1274,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
     },
     {
       "name": "FaceSurface",
-      "vertices": 531,
-      "triangles": 934,
+      "vertices": 16,
+      "triangles": 22,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
@@ -33,26 +33,6 @@
       "available": true,
       "packed": true,
       "color_space": "sRGB"
-    },
-    {
-      "name": "Dog_BaseColor",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "sRGB"
-    },
-    {
-      "name": "Dog_Normal",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "Non-Color"
     }
   ],
   "actions": {
@@ -62,7 +42,7 @@
         61.0
       ],
       "duration_seconds": 2.0,
-      "sampled_max_vertex_motion": 0.1125649826304684,
+      "sampled_max_vertex_motion": 0.10397145587664493,
       "loop_endpoint_delta": 0.0
     },
     "Run": {
@@ -71,7 +51,7 @@
         25.0
       ],
       "duration_seconds": 0.8,
-      "sampled_max_vertex_motion": 0.2077380209280297,
+      "sampled_max_vertex_motion": 0.2137448677008761,
       "loop_endpoint_delta": 0.0
     },
     "Jump": {
@@ -80,8 +60,8 @@
         43.0
       ],
       "duration_seconds": 1.4,
-      "sampled_max_vertex_motion": 0.31379490932119786,
-      "loop_endpoint_delta": 0.0044285363872820435
+      "sampled_max_vertex_motion": 0.3210901674054959,
+      "loop_endpoint_delta": 0.005246053562619575
     },
     "Bark": {
       "frames": [
@@ -89,7 +69,7 @@
         37.0
       ],
       "duration_seconds": 1.2,
-      "sampled_max_vertex_motion": 0.17222316605894916,
+      "sampled_max_vertex_motion": 0.15905451353581837,
       "loop_endpoint_delta": 0.0
     },
     "Poop": {
@@ -98,7 +78,7 @@
         109.0
       ],
       "duration_seconds": 3.6,
-      "sampled_max_vertex_motion": 0.15555461176132304,
+      "sampled_max_vertex_motion": 0.1499491698151772,
       "loop_endpoint_delta": 0.0
     },
     "Pee": {
@@ -107,7 +87,7 @@
         97.0
       ],
       "duration_seconds": 3.2,
-      "sampled_max_vertex_motion": 0.3376425082951116,
+      "sampled_max_vertex_motion": 0.41009311303611995,
       "loop_endpoint_delta": 0.0
     },
     "Bite": {
@@ -116,12 +96,12 @@
         28.0
       ],
       "duration_seconds": 0.9,
-      "sampled_max_vertex_motion": 0.17200100922764985,
-      "loop_endpoint_delta": 3.32490287893098e-05
+      "sampled_max_vertex_motion": 0.15906160391290894,
+      "loop_endpoint_delta": 0.0
     }
   },
-  "vertices": 6359,
-  "triangles": 12526,
+  "vertices": 696,
+  "triangles": 1296,
   "max_influences": 4,
   "status": "PASS"
 }

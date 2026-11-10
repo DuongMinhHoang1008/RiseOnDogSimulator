@@ -3,7 +3,27 @@ guid: 7e9b430e20a2f464f82df4dbcdd9b4b8
 ModelImporter:
   serializedVersion: 24300
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Dog_Cream
+    second: {fileID: 2100000, guid: 58b6dc0fc70538e4e800f82de91c3a48, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Dog_Ear
+    second: {fileID: 2100000, guid: 4f98d7ec144a1b84088409784776a93c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Dog_Ginger
+    second: {fileID: 2100000, guid: 35ab479401a0ead4db2ca6bb9f141771, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: FaceSurface_Blank
+    second: {fileID: 2100000, guid: 776ae6a655cc824408ac28568292dc05, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0

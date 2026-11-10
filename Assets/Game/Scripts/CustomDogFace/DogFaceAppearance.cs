@@ -17,7 +17,6 @@ namespace DogSimulator.CustomDogFace
 
         private void Awake()
         {
-            if (presenter == null) presenter = GetComponent<DogVisualPresenter>();
             if (presenter != null) presenter.VisualChanged += Rebind;
         }
 

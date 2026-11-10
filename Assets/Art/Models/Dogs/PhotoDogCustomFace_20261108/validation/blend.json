@@ -16,8 +16,8 @@
     },
     {
       "name": "PhotoDogCustomFace_Body",
-      "vertices": 8865,
-      "triangles": 17482,
+      "vertices": 2304,
+      "triangles": 4227,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
@@ -62,7 +62,7 @@
         61.0
       ],
       "duration_seconds": 2.0,
-      "sampled_max_vertex_motion": 0.01897092941820407,
+      "sampled_max_vertex_motion": 0.022695066503321717,
       "loop_endpoint_delta": 0.0
     },
     "Run": {
@@ -71,7 +71,7 @@
         25.0
       ],
       "duration_seconds": 0.8,
-      "sampled_max_vertex_motion": 0.22989087817348383,
+      "sampled_max_vertex_motion": 0.2369740172789013,
       "loop_endpoint_delta": 0.0
     },
     "Jump": {
@@ -80,8 +80,8 @@
         43.0
       ],
       "duration_seconds": 1.4,
-      "sampled_max_vertex_motion": 0.31389709126500254,
-      "loop_endpoint_delta": 0.004427714267008139
+      "sampled_max_vertex_motion": 0.3213777990709538,
+      "loop_endpoint_delta": 0.005186238765243917
     },
     "Bark": {
       "frames": [
@@ -89,7 +89,7 @@
         37.0
       ],
       "duration_seconds": 1.2,
-      "sampled_max_vertex_motion": 0.06307323598979456,
+      "sampled_max_vertex_motion": 0.06262427838316141,
       "loop_endpoint_delta": 0.0
     },
     "Poop": {
@@ -98,7 +98,7 @@
         109.0
       ],
       "duration_seconds": 3.6,
-      "sampled_max_vertex_motion": 0.14680273753536402,
+      "sampled_max_vertex_motion": 0.1509907277874961,
       "loop_endpoint_delta": 0.0
     },
     "Pee": {
@@ -107,7 +107,7 @@
         97.0
       ],
       "duration_seconds": 3.2,
-      "sampled_max_vertex_motion": 0.3797165757003912,
+      "sampled_max_vertex_motion": 0.40500772222137227,
       "loop_endpoint_delta": 0.0
     },
     "Bite": {
@@ -116,12 +116,12 @@
         28.0
       ],
       "duration_seconds": 0.9,
-      "sampled_max_vertex_motion": 0.1287405994540428,
+      "sampled_max_vertex_motion": 0.12739649617116225,
       "loop_endpoint_delta": 8.143704766728745e-05
     }
   },
-  "vertices": 9336,
-  "triangles": 18284,
+  "vertices": 2775,
+  "triangles": 5029,
   "max_influences": 4,
   "custom_face": {
     "uv_min": [
@@ -139,13 +139,13 @@
     "default_texture_is_solid": true,
     "matched_seam_vertices": 118,
     "max_seam_gap_per_clip_scene_units": {
-      "Idle": 0.0,
+      "Idle": 5.960464477539063e-08,
       "Run": 0.0,
-      "Jump": 0.0,
-      "Bark": 0.0,
-      "Poop": 0.0,
-      "Pee": 0.0,
-      "Bite": 0.0
+      "Jump": 5.960464477539063e-08,
+      "Bark": 2.9802322387695312e-08,
+      "Poop": 2.9802322387695312e-08,
+      "Pee": 5.972094663188382e-08,
+      "Bite": 5.960464477539063e-08
     }
   },
   "status": "PASS"

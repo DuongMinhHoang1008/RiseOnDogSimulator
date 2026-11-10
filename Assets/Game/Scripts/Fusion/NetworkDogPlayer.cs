@@ -9,7 +9,7 @@ namespace DogSimulator.Networking
 {
     [RequireComponent(typeof(NetworkObject), typeof(NetworkTransform))]
     [RequireComponent(typeof(DogMotor), typeof(DogInputReader), typeof(DogAnimationDriver))]
-    public sealed class NetworkDogPlayer : NetworkBehaviour
+    public sealed partial class NetworkDogPlayer : NetworkBehaviour
     {
         private static readonly List<NetworkDogPlayer> ActivePlayers = new();
         private static readonly int PeeState = Animator.StringToHash(nameof(DogAction.Pee));
@@ -19,7 +19,7 @@ namespace DogSimulator.Networking
         private const float PeeLegLowerStart = .76f;
         private const float MinimumPlayerSeparation = .8f;
         private const float MaximumSeparationHeight = .65f;
-        private static readonly Vector3 PeeOutletOffset = new(-.15f, -.157f, .129f);
+        private static readonly Vector3 PeeOutletOffset = new(-.15f, -.057f, .129f);
         private static readonly Quaternion PeeAim = Quaternion.LookRotation(new Vector3(-1f, -.23f, .24f));
         [SerializeField] private TMP_Text nameLabel;
         [SerializeField] private DogModelCatalog modelCatalog;
@@ -59,26 +59,41 @@ namespace DogSimulator.Networking
         [Networked] private TickTimer VehicleExitHintUntil { get; set; }
         [Networked] private TickTimer PoopCooldownUntil { get; set; }
         [Networked] private TickTimer PeeCooldownUntil { get; set; }
-        private DogMotor motor;
-        private DogInputReader input;
+        [SerializeField] private DogMotor motor;
+        [SerializeField] private NetworkTransform transformSync;
+        [SerializeField] private DogBackSupport backSupport;
+        internal CharacterController Controller => motor.Controller;
+        internal DogInputReader InputReader => input;
+        internal DogVisualPresenter Visual => animations.Visual;
+        [SerializeField] private DogInputReader input;
         private DogCamera followCamera;
         private string renderedName;
-        private DogAnimationDriver animations;
+        [SerializeField] private DogAnimationDriver animations;
         private int renderedModelId = int.MinValue;
-        private Transform mouthAnchor;
+        [SerializeField] private Transform mouthAnchor;
         private float nextBodyImpactTime;
         private readonly Dictionary<NetworkId, int> processedImpacts = new();
-        private DogFaceAppearance faceAppearance;
+        [SerializeField] private DogFaceAppearance faceAppearance;
         private byte[] ownerFaceJpeg;
-        private ParticleSystem peeStream;
+        [SerializeField] private ParticleSystem peeStream;
         private Transform peePelvis;
-        private Collider[] seatColliders;
+        [SerializeField] private Collider[] seatColliders;
         private bool presentedInSeat;
         private int processedBite = int.MinValue;
+        private int processedBark = int.MinValue;
+        [Networked] public NetworkId CarrierId { get; private set; }
+        [Networked] private NetworkBool SettledDown { get; set; }
+        [Networked] private TickTimer CarryImmuneUntil { get; set; }
+        private float stableDownSeconds;
+        private Pose lastPronePose;
+        internal bool CanBeCarried => KnockdownActive && SettledDown && !CarrierId.IsValid
+            && CarryImmuneUntil.ExpiredOrNotRunning(Runner) && FindHeldTarget() == null;
+        internal Vector3 CarryPoint => transform.position + Vector3.up * .25f;
 
         public static IReadOnlyList<NetworkDogPlayer> Active => ActivePlayers;
         public Transform MouthAnchor => mouthAnchor != null ? mouthAnchor : transform;
         public float CarryRange => carryRange;
+        internal int RespawnSerial => motor.RespawnSerial;
         internal float PoopCooldown => Object != null && Object.IsValid ? PoopCooldownUntil.RemainingTime(Runner) ?? 0 : 0;
         internal float PeeCooldown => Object != null && Object.IsValid ? PeeCooldownUntil.RemainingTime(Runner) ?? 0 : 0;
         public DogFaceAppearance FaceAppearance => faceAppearance;
@@ -93,6 +108,8 @@ namespace DogSimulator.Networking
             if (input.ConsumePrimaryCarry()) buttons |= DogInputButtons.PrimaryCarry;
             if (input.ConsumeDropCarry()) buttons |= DogInputButtons.DropCarry;
             if (input.ConsumeResetYard()) buttons |= DogInputButtons.ResetYard;
+            if (input.ConsumeRespawnBone()) buttons |= DogInputButtons.RespawnBone;
+            if (input.ConsumeResetMission()) buttons |= DogInputButtons.ResetMission;
             return new DogNetworkInput
             {
                 Move = input.Move,
@@ -102,6 +119,8 @@ namespace DogSimulator.Networking
                 Buttons = buttons
             };
         }
+
+        internal static event System.Action<NetworkDogPlayer, int, byte[]> FaceReceived;
 
         // Any committed peer may need to fetch this avatar's face. In Host Mode the
         // avatar owner is InputAuthority rather than a Proxy, so Proxies alone rejects
@@ -116,7 +135,7 @@ namespace DogSimulator.Networking
         [Rpc(RpcSources.StateAuthority, RpcTargets.Proxies, Channel = RpcChannel.ReliableLargeData, TickAligned = false)]
         internal void RPC_ReceiveFace([RpcTarget] PlayerRef target, int revision, byte[] jpeg)
         {
-            Runner.GetComponent<CustomDogFaceNetworkService>()?.ReceiveFace(this, revision, jpeg);
+            FaceReceived?.Invoke(this, revision, jpeg);
         }
 
         [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority, TickAligned = false)]
@@ -147,8 +166,8 @@ namespace DogSimulator.Networking
 
         public bool IntersectsBodySweep(Vector3 start, Vector3 end, float sweepRadius)
         {
-            var controller = GetComponent<CharacterController>();
-            if (controller == null) return false;
+            var controller = Controller;
+            if (controller == null || CarrierId.IsValid) return false;
             var scale = transform.lossyScale;
             var bodyRadius = controller.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
             var halfSegment = Mathf.Max(0, controller.height * .5f - controller.radius) * Mathf.Abs(scale.y);
@@ -199,19 +218,13 @@ namespace DogSimulator.Networking
 
         public override void Spawned()
         {
-            motor = GetComponent<DogMotor>();
-            input = GetComponent<DogInputReader>();
-            animations = GetComponent<DogAnimationDriver>();
-            faceAppearance = GetComponent<DogFaceAppearance>();
             motor.ControllerImpact += OnControllerImpact;
             motor.BodyPush += OnBodyPush;
             motor.HardLanding += OnHardLanding;
-            mouthAnchor = transform.Find("MouthAnchor");
             if (!ActivePlayers.Contains(this)) ActivePlayers.Add(this);
             input.SetGameplayEnabled(false);
             input.enabled = Object.HasInputAuthority || Runner.GameMode == GameMode.Single;
-            var controller = GetComponent<CharacterController>();
-            seatColliders = GetComponentsInChildren<Collider>(true);
+            var controller = Controller;
             controller.enabled = false;
             if (Object.HasStateAuthority)
             {
@@ -338,8 +351,21 @@ namespace DogSimulator.Networking
             if (Runner.GameMode == GameMode.Single)
                 networkInput = ConsumeNetworkInput();
             else hasInput = GetInput(out networkInput);
-            if (networkInput.IsPressed(DogInputButtons.ResetYard))
-                SubmitInteraction(NetworkId.None, SandboxInteractionKind.ResetYard);
+            var reset = networkInput.IsPressed(DogInputButtons.ResetYard) ? SandboxInteractionKind.ResetYard
+                : networkInput.IsPressed(DogInputButtons.ResetMission) ? SandboxInteractionKind.ResetMission
+                : networkInput.IsPressed(DogInputButtons.RespawnBone) ? SandboxInteractionKind.RespawnBone
+                : SandboxInteractionKind.None;
+            if (reset != SandboxInteractionKind.None) SubmitInteraction(NetworkId.None, reset);
+            if (CarrierId.IsValid)
+            {
+                if (Runner.TryFindObject(CarrierId, out var carrier) && carrier.TryGetComponent<NetworkDogPlayer>(out var dog))
+                {
+                    if (networkInput.IsPressed(DogInputButtons.Jump)) ReleaseFromCarrier(dog, true);
+                    else FollowCarrier(dog);
+                }
+                else ReleaseFromCarrier(null, true);
+                return;
+            }
             if (SeatedVehicleId.IsValid)
             {
                 var vehicle = GetSeatedVehicle();
@@ -359,12 +385,7 @@ namespace DogSimulator.Networking
             animations.Simulate(networkInput.Move, networkInput.Sprint != 0,
                 networkInput.IsPressed(DogInputButtons.Jump), networkInput.Action,
                 true, networkInput.Yaw, Runner.DeltaTime, knockedDown);
-            if (animations.CurrentAction == DogAction.Bite && animations.RemainingSeconds <= .72f
-                && processedBite != animations.Sequence)
-            {
-                processedBite = animations.Sequence;
-                NetworkCityPedestrian.TryBite(this);
-            }
+            DispatchPedestrianReactions();
             if (animations.PoopCooldown > previousPoopCooldown)
                 PoopCooldownUntil = TickTimer.CreateFromSeconds(Runner, animations.PoopCooldown);
             if (animations.PeeCooldown > previousPeeCooldown)
@@ -372,7 +393,7 @@ namespace DogSimulator.Networking
             ResolvePlayerOverlap();
             MovementVelocity = motor.WorldVelocity;
             CaptureStackState();
-            if (!networkInput.IsPressed(DogInputButtons.ResetYard))
+            if (!KnockdownActive && reset == SandboxInteractionKind.None)
             {
                 if (networkInput.IsPressed(DogInputButtons.DropCarry)) SubmitDropInteraction();
                 else if (networkInput.IsPressed(DogInputButtons.PrimaryCarry)) SubmitPrimaryCarryInteraction();
@@ -389,17 +410,33 @@ namespace DogSimulator.Networking
             }
         }
 
+        private void DispatchPedestrianReactions()
+        {
+            if (animations.CurrentAction == DogAction.Bite && animations.RemainingSeconds <= .72f
+                && processedBite != animations.Sequence)
+            {
+                processedBite = animations.Sequence;
+                NetworkCityPedestrian.TryBite(this);
+            }
+            if (animations.CurrentAction == DogAction.Bark && processedBark != animations.Sequence)
+            {
+                processedBark = animations.Sequence;
+                foreach (var npc in NetworkCityPedestrian.Active)
+                    if (npc.Runner == Runner) npc.HearBark(this);
+            }
+        }
+
         private void ResolvePlayerOverlap()
         {
             // The dog controllers ignore each other so dogs can jump onto each other's backs.
             // Keep their bodies separated horizontally unless one is standing on a support.
             if (motor.CurrentSupportOwner != null) return;
-            var controller = GetComponent<CharacterController>();
+            var controller = Controller;
             if (controller == null || !controller.enabled) return;
             foreach (var other in ActivePlayers)
             {
                 if (other == null || other == this || other.Runner != Runner || other.Object == null
-                    || !other.Object.IsValid || other.SeatedVehicleId.IsValid
+                    || !other.Object.IsValid || other.SeatedVehicleId.IsValid || other.CarrierId.IsValid
                     || other.motor != null && other.motor.CurrentSupportOwner == transform)
                     continue;
                 var correction = CalculatePlayerSeparation(transform.position, other.transform.position,
@@ -425,7 +462,7 @@ namespace DogSimulator.Networking
         private void SubmitPrimaryCarryInteraction()
         {
             var target = GetCarryTarget(out var carrying);
-            if (target != null)
+            if (target != null && !(carrying && target is NetworkDogPlayer))
                 SubmitInteraction(target.Object.Id, carrying ? SandboxInteractionKind.Throw : SandboxInteractionKind.Pickup);
         }
 
@@ -433,31 +470,151 @@ namespace DogSimulator.Networking
         {
             var target = GetCarryTarget(out var carrying);
             if (carrying) SubmitInteraction(target.Object.Id, SandboxInteractionKind.Drop);
+            else if (InJail || CitySandbox?.CanUseJailLever(this) == true)
+                SubmitInteraction(NetworkId.None, SandboxInteractionKind.UseJail);
             else NetworkCityVehicle.FindAvailable(this)?.TryEnter(this);
         }
 
-        internal NetworkCarryable GetCarryTarget(out bool carrying)
+        internal NetworkBehaviour GetCarryTarget(out bool carrying)
         {
             carrying = false;
-            if (Object == null || !Object.IsValid || SeatedVehicleId.IsValid) return null;
-            NetworkCarryable nearest = null;
-            var best = carryRange * carryRange;
-            for (var i = 0; i < NetworkCarryable.Active.Count; i++)
+            if (Object == null || !Object.IsValid || SeatedVehicleId.IsValid || KnockdownActive || CarrierId.IsValid) return null;
+            var held = FindHeldTarget();
+            if (held != null)
             {
-                var candidate = NetworkCarryable.Active[i];
-                if (candidate == null || candidate.Object == null || !candidate.Object.IsValid || candidate.Runner != Runner) continue;
-                if (candidate.CarrierId == Object.Id)
-                {
-                    carrying = true;
-                    return candidate;
-                }
-                if (candidate.IsCarried) continue;
-                var distance = (candidate.transform.position - MouthAnchor.position).sqrMagnitude;
-                if (distance >= best) continue;
+                carrying = true;
+                return held;
+            }
+            NetworkBehaviour nearest = null;
+            var best = carryRange * carryRange;
+            foreach (var prop in NetworkCarryable.Active)
+                if (IsSameSession(prop) && !prop.IsCarried && (!prop.IsJailBowl || InJail))
+                    Consider(prop, prop.transform.position);
+            foreach (var npc in NetworkCityPedestrian.Active)
+                if (IsSameSession(npc) && npc.CanBeCarried) Consider(npc, npc.CarryPoint);
+            foreach (var dog in ActivePlayers)
+                if (dog != this && IsSameSession(dog) && !dog.InJail && !InJail && dog.CanBeCarried)
+                    Consider(dog, dog.CarryPoint);
+            return nearest;
+
+            void Consider(NetworkBehaviour candidate, Vector3 point)
+            {
+                var distance = (point - MouthAnchor.position).sqrMagnitude;
+                if (distance >= best || !CanReachCarryTarget(candidate, point)) return;
                 best = distance;
                 nearest = candidate;
             }
-            return nearest;
+        }
+
+        private bool IsSameSession(NetworkBehaviour target) =>
+            target != null && target.Object != null && target.Object.IsValid && target.Runner == Runner;
+
+        internal NetworkBehaviour FindHeldTarget()
+        {
+            var id = Object.Id;
+            foreach (var prop in NetworkCarryable.Active)
+                if (IsSameSession(prop) && prop.CarrierId == id) return prop;
+            foreach (var npc in NetworkCityPedestrian.Active)
+                if (IsSameSession(npc) && npc.CarrierId == id) return npc;
+            foreach (var dog in ActivePlayers)
+                if (IsSameSession(dog) && dog.CarrierId == id) return dog;
+            return null;
+        }
+
+        internal bool CanPickUp(NetworkBehaviour target, Vector3 point) => Object.HasStateAuthority
+            && target != this && IsSameSession(target) && !SeatedVehicleId.IsValid && !KnockdownActive
+            && !CarrierId.IsValid && FindHeldTarget() == null && CanReachCarryTarget(target, point);
+
+        private bool CanReachCarryTarget(NetworkBehaviour target, Vector3 point)
+        {
+            var delta = point - MouthAnchor.position;
+            var bearing = Vector3.ProjectOnPlane(point - transform.position, Vector3.up);
+            if (delta.sqrMagnitude > carryRange * carryRange || Vector3.Dot(bearing.normalized, transform.forward) < .15f)
+                return false;
+            foreach (var hit in Physics.RaycastAll(MouthAnchor.position, delta.normalized, delta.magnitude,
+                Physics.DefaultRaycastLayers | (1 << 2), QueryTriggerInteraction.Ignore))
+                if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(target.transform)) return false;
+            return true;
+        }
+
+        internal bool TryFindBodyDrop(NetworkBehaviour target, Vector3 center, Vector3 half, Quaternion rotation, out Vector3 point)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                var direction = Quaternion.Euler(0, i * 45, 0) * transform.forward;
+                var probe = transform.position + direction * (1.1f + half.z) + Vector3.up * .8f;
+                if (!Physics.Raycast(probe, Vector3.down, out var ground, 1.8f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) || ground.normal.y < .65f) continue;
+                point = ground.point + Vector3.up * .035f;
+                if (Physics.Linecast(transform.position + Vector3.up * .55f, point + Vector3.up * .55f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) continue;
+                if (CanPlaceBody(target.transform, point, center, half, rotation)) return true;
+            }
+            point = default;
+            return false;
+        }
+
+        private static bool CanPlaceBody(Transform target, Vector3 point, Vector3 center, Vector3 half, Quaternion rotation)
+        {
+            foreach (var collider in Physics.OverlapBox(point + rotation * center, half * .97f, rotation,
+                Physics.DefaultRaycastLayers | (1 << 2), QueryTriggerInteraction.Ignore))
+                if (!collider.transform.IsChildOf(target)) return false;
+            return true;
+        }
+
+        internal bool TryBePickedUp(NetworkDogPlayer dog)
+        {
+            if (InJail || dog.InJail || !CanBeCarried || !dog.CanPickUp(this, CarryPoint)) return false;
+            lastPronePose = new Pose(transform.position, transform.rotation);
+            CarrierId = dog.Object.Id;
+            motor.ClearMotion();
+            CaptureStackState();
+            MovementVelocity = Vector3.zero;
+            foreach (var collider in seatColliders) collider.enabled = false;
+            FollowCarrier(dog);
+            return true;
+        }
+
+        internal void ReleaseFromCarrier(NetworkDogPlayer dog, bool escape)
+        {
+            if (!Object.HasStateAuthority || !CarrierId.IsValid || (dog != null && CarrierId != dog.Object.Id)) return;
+            var pose = lastPronePose;
+            var controller = Controller;
+            var half = new Vector3(controller.radius, controller.height * .5f, controller.radius);
+            if (dog != null && dog.TryFindBodyDrop(this, controller.center, half, dog.transform.rotation, out var point))
+                pose = new Pose(point, dog.transform.rotation);
+            else if (!CanPlaceBody(transform, pose.position, controller.center, half, pose.rotation))
+            {
+                motor.Respawn();
+                pose = new Pose(transform.position, transform.rotation);
+            }
+            CarrierId = NetworkId.None;
+            transformSync.Teleport(pose.position, pose.rotation);
+            motor.ClearMotion();
+            foreach (var collider in seatColliders) collider.enabled = true;
+            if (escape)
+            {
+                KnockdownActive = SettledDown = false;
+                CarryImmuneUntil = TickTimer.CreateFromSeconds(Runner, 2f);
+            }
+            else
+            {
+                SettledDown = false;
+                stableDownSeconds = 0;
+            }
+        }
+
+        private void FollowCarrier(NetworkDogPlayer dog) => transform.SetPositionAndRotation(
+            dog.MouthAnchor.position + dog.transform.forward * .32f - Vector3.up * .24f, dog.transform.rotation);
+
+        internal void ReleaseHeldTarget()
+        {
+            switch (FindHeldTarget())
+            {
+                case NetworkCarryable prop: prop.ForceDrop(this); break;
+                case NetworkCityPedestrian npc: npc.Release(this, false); break;
+                case NetworkDogPlayer dog: dog.ReleaseFromCarrier(this, false); break;
+            }
         }
 
         private void SubmitInteraction(NetworkId target, SandboxInteractionKind kind)
@@ -474,6 +631,8 @@ namespace DogSimulator.Networking
         }
 
         public const string NamesPreferenceKey = "DogSimulator.ShowPlayerNames";
+        private const float NameplateFadeStart = 18f;
+        private const float NameplateFadeEnd = 24f;
         public static bool ShowNameplates { get; set; } = true;
 
         public override void Render()
@@ -483,18 +642,20 @@ namespace DogSimulator.Networking
             {
                 renderedModelId = DogModelId;
                 animations.ApplyModel(modelCatalog, DogModelId);
-                peePelvis = animations.Visual?.Animator?.transform.Find("Dog_Rig/Root/Pelvis");
+                peePelvis = animations.Visual?.PeePelvis;
             }
             animations.PresentSnapshot(AnimationSpeed, AnimationGrounded, AnimationAction,
                 AnimationSequence, Mathf.Max(0, AnimationUntil.RemainingTime(Runner) ?? 0));
             animations.PresentKnockdown(IsKnockedDown(), KnockdownDirection);
             if (nameLabel == null) return;
-            nameLabel.enabled = ShowNameplates;
-            if (!ShowNameplates) return;
+            var camera = ShowNameplates ? Camera.main : null;
+            var distance = camera != null ? Vector3.Distance(camera.transform.position, nameLabel.transform.position) : 0f;
+            nameLabel.enabled = camera != null && distance < NameplateFadeEnd;
+            if (!nameLabel.enabled) return;
             var name = Nickname.ToString();
             if (renderedName != name) { nameLabel.text = name; renderedName = name; }
-            var camera = Camera.main;
-            if (camera != null) nameLabel.transform.rotation = camera.transform.rotation;
+            nameLabel.alpha = 1f - Mathf.InverseLerp(NameplateFadeStart, NameplateFadeEnd, distance);
+            nameLabel.transform.rotation = camera.transform.rotation;
         }
 
         private void LateUpdate()
@@ -504,13 +665,15 @@ namespace DogSimulator.Networking
                 var vehicle = GetSeatedVehicle();
                 if (!Object.HasStateAuthority)
                 {
-                    if (presentedInSeat != SeatedVehicleId.IsValid)
+                    if (presentedInSeat != (SeatedVehicleId.IsValid || CarrierId.IsValid))
                     {
-                        presentedInSeat = SeatedVehicleId.IsValid;
+                        presentedInSeat = SeatedVehicleId.IsValid || CarrierId.IsValid;
                         foreach (var collider in seatColliders)
                             if (collider is not CharacterController) collider.enabled = !presentedInSeat;
                     }
                     if (vehicle != null) transform.SetPositionAndRotation(vehicle.Seat.position, vehicle.Seat.rotation);
+                    else if (CarrierId.IsValid && Runner.TryFindObject(CarrierId, out var carrier)
+                        && carrier.TryGetComponent<NetworkDogPlayer>(out var dog)) FollowCarrier(dog);
                 }
                 followCamera?.Follow(vehicle != null ? vehicle.CameraTarget : transform);
             }
@@ -538,35 +701,10 @@ namespace DogSimulator.Networking
             }
 
             if (peeMaterial == null) return;
-            if (peeStream == null) CreatePeeStream();
+            if (peeStream == null) return;
             var outlet = peePelvis.position + animator.transform.TransformVector(PeeOutletOffset);
             peeStream.transform.SetPositionAndRotation(outlet, animator.transform.rotation * PeeAim);
             if (!peeStream.isEmitting) peeStream.Play();
-        }
-
-        private void CreatePeeStream()
-        {
-            var effect = new GameObject("Pee Stream");
-            effect.SetActive(false);
-            effect.transform.SetParent(transform, false);
-            peeStream = effect.AddComponent<ParticleSystem>();
-            var main = peeStream.main;
-            main.playOnAwake = false;
-            main.loop = true;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.startLifetime = .38f;
-            main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 1.9f);
-            main.startSize = new ParticleSystem.MinMaxCurve(.025f, .043f);
-            main.gravityModifier = .65f;
-            main.maxParticles = 48;
-            var emission = peeStream.emission;
-            emission.rateOverTime = 75;
-            var shape = peeStream.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 4;
-            shape.radius = .009f;
-            peeStream.GetComponent<ParticleSystemRenderer>().sharedMaterial = peeMaterial;
-            effect.SetActive(true);
         }
 
         private void CaptureStackState()
@@ -591,7 +729,7 @@ namespace DogSimulator.Networking
         {
             if (Object == null || Object.HasStateAuthority || !StackSupportId.IsValid
                 || !Runner.TryFindObject(StackSupportId, out var supportObject)) return;
-            var support = supportObject.GetComponentInChildren<DogBackSupport>(true);
+            var support = supportObject.TryGetComponent<NetworkDogPlayer>(out var player) ? player.backSupport : null;
             if (support == null) return;
             var supportTransform = support.transform;
             transform.SetPositionAndRotation(
@@ -604,7 +742,6 @@ namespace DogSimulator.Networking
         private bool UpdateKnockdownState()
         {
             if (!KnockdownActive) return false;
-            if ((KnockdownUntil.RemainingTime(Runner) ?? 0) > 0) return true;
 
             var velocity = motor.WorldVelocity;
             var horizontalSpeed = new Vector2(velocity.x, velocity.z).magnitude;
@@ -613,20 +750,31 @@ namespace DogSimulator.Networking
                 || Mathf.Abs(velocity.y) > knockdownSettleSpeed;
             if (stillHasInertia)
             {
-                // Keep a short rolling window alive until the knockback has actually settled.
-                KnockdownUntil = TickTimer.CreateFromSeconds(Runner, .15f);
+                SettledDown = false;
+                stableDownSeconds = 0;
                 return true;
             }
-
-            KnockdownActive = false;
+            stableDownSeconds += Runner.DeltaTime;
+            if (stableDownSeconds < .2f) return true;
+            if (!SettledDown)
+            {
+                SettledDown = true;
+                KnockdownUntil = TickTimer.CreateFromSeconds(Runner, Mathf.Max(1.35f, minimumKnockdownSeconds));
+            }
+            if (!KnockdownUntil.Expired(Runner)) return true;
+            KnockdownActive = SettledDown = false;
             return false;
         }
 
         private void OnControllerImpact(Collider other, Vector3 velocity)
         {
+            if (CitySandbox != null && !InJail && velocity.sqrMagnitude >= 36f
+                && other.GetComponentInParent<NetworkCityPedestrian>() is { } npc && npc.Runner == Runner
+                && npc.IsStanding)
+                npc.QueueHit(velocity, velocity.magnitude, Object.Id, AnnoyingAction.Ram);
             if (Time.unscaledTime < nextBodyImpactTime) return;
             var target = other.GetComponentInParent<NetworkDogPlayer>();
-            if (target == null || target == this || target.Runner != Runner) return;
+            if (target == null || target == this || target.Runner != Runner || target.CarrierId.IsValid) return;
             var speed = velocity.magnitude;
             if (speed < 1.5f) return;
             var away = Vector3.ProjectOnPlane(target.transform.position - transform.position, Vector3.up).normalized;
@@ -666,9 +814,7 @@ namespace DogSimulator.Networking
             impulse = Vector3.ClampMagnitude(impulse, 18f);
             motor.ApplyKnockback(impulse);
             if (!forceKnockdown && impulse.magnitude < 7.5f) return;
-            KnockdownDirection = impulse.normalized;
-            KnockdownActive = true;
-            KnockdownUntil = TickTimer.CreateFromSeconds(Runner, minimumKnockdownSeconds);
+            BeginKnockdown(impulse.normalized);
         }
 
         private void OnBodyPush(Rigidbody body, Vector3 impulse)
@@ -702,7 +848,7 @@ namespace DogSimulator.Networking
 
         internal bool TrySit(NetworkCityVehicle vehicle)
         {
-            if (!Object.HasStateAuthority || SeatedVehicleId.IsValid || KnockdownActive) return false;
+            if (!Object.HasStateAuthority || InJail || SeatedVehicleId.IsValid || KnockdownActive || CarrierId.IsValid || FindHeldTarget() != null) return false;
             SeatedVehicleId = vehicle.Object.Id;
             motor.ClearMotion();
             CaptureStackState();
@@ -720,14 +866,14 @@ namespace DogSimulator.Networking
 
         internal void LeaveVehicle(Vector3 position, Quaternion rotation)
         {
-            GetComponent<NetworkTransform>().Teleport(position, rotation);
+            transformSync.Teleport(position, rotation);
             RestoreWalking();
         }
 
         internal void RecoverFromVehicle()
         {
             motor.Respawn();
-            GetComponent<NetworkTransform>().Teleport(transform.position, transform.rotation);
+            transformSync.Teleport(transform.position, transform.rotation);
             RestoreWalking();
         }
 
@@ -741,7 +887,7 @@ namespace DogSimulator.Networking
 
         internal void ApplyWorldImpact(Vector3 impulse, bool forceKnockdown)
         {
-            if (Object.HasStateAuthority && !SeatedVehicleId.IsValid) ApplyImpact(impulse, forceKnockdown);
+            if (Object.HasStateAuthority && !SeatedVehicleId.IsValid && !CarrierId.IsValid) ApplyImpact(impulse, forceKnockdown);
         }
 
         private void OnHardLanding(float impactSpeed)
@@ -750,9 +896,17 @@ namespace DogSimulator.Networking
             if (followCamera != null) followCamera.ShakeOnLanding(impactSpeed);
             else if (Object.InputAuthority.IsRealPlayer && !Object.HasInputAuthority)
                 RPC_ShakeOnLanding(impactSpeed);
-            KnockdownDirection = transform.right;
+            BeginKnockdown(transform.right);
+        }
+
+        private void BeginKnockdown(Vector3 direction)
+        {
+            ReleaseHeldTarget();
+            KnockdownDirection = direction;
             KnockdownActive = true;
-            KnockdownUntil = TickTimer.CreateFromSeconds(Runner, minimumKnockdownSeconds);
+            SettledDown = false;
+            stableDownSeconds = 0;
+            KnockdownUntil = TickTimer.None;
         }
 
         [Rpc(RpcSources.StateAuthority, RpcTargets.InputAuthority,

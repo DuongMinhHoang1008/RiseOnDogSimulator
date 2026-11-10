@@ -7,9 +7,10 @@ namespace DogSimulator.CustomDogFace
     {
         [SerializeField] private Renderer targetRenderer;
         [SerializeField] private int layoutVersion = CustomDogFaceConstants.LayoutVersion;
+        [SerializeField] private Material portraitMaterial;
         private Material materialInstance;
+        private Material defaultMaterial;
         private Texture appliedTexture;
-        private Texture defaultTexture;
         private bool ownsTexture;
 
         public int LayoutVersion => layoutVersion;
@@ -22,11 +23,13 @@ namespace DogSimulator.CustomDogFace
             if (ownsTexture && appliedTexture != null && appliedTexture != texture) Destroy(appliedTexture);
             if (materialInstance == null)
             {
-                defaultTexture = targetRenderer.sharedMaterial != null ? targetRenderer.sharedMaterial.mainTexture : null;
-                materialInstance = new Material(targetRenderer.sharedMaterial) { name = $"{name} Face Material" };
-                targetRenderer.material = materialInstance;
+                defaultMaterial = targetRenderer.sharedMaterial;
+                // The stock face follows the coat lighting, while a player photo needs its original colors.
+                var template = portraitMaterial != null ? portraitMaterial : defaultMaterial;
+                materialInstance = new Material(template) { name = $"{name} Face Material" };
             }
             materialInstance.mainTexture = texture;
+            targetRenderer.sharedMaterial = materialInstance;
             appliedTexture = texture;
             ownsTexture = takeOwnership;
         }
@@ -35,8 +38,10 @@ namespace DogSimulator.CustomDogFace
         {
             if (ownsTexture && appliedTexture != null) Destroy(appliedTexture);
             ownsTexture = false;
-            appliedTexture = defaultTexture;
-            if (materialInstance != null) materialInstance.mainTexture = defaultTexture;
+            appliedTexture = null;
+            if (materialInstance == null) return;
+            materialInstance.mainTexture = null;
+            if (targetRenderer != null) targetRenderer.sharedMaterial = defaultMaterial;
         }
 
         public bool TryApplyJpeg(byte[] jpeg)

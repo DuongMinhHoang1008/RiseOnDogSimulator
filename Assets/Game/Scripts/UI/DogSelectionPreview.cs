@@ -14,7 +14,7 @@ namespace DogSimulator.UI
         [SerializeField] private Transform previewAnchor;
         [SerializeField, Min(0f)] private float rotationDegreesPerSecond = 16f;
         private RenderTexture renderTexture;
-        private GameObject previewModel;
+        private DogModelVisual previewModel;
         private UnityEngine.UI.Image homeDog;
         private Vector2 homeDogRestPosition;
         private bool menuPresentation;
@@ -22,8 +22,7 @@ namespace DogSimulator.UI
         public int DisplayedModelId => displayedModelId;
         public bool HasRenderedModel => previewModel != null;
         public bool RenderTextureReady => renderTexture != null && renderTexture.IsCreated();
-        public DogFaceSurface FaceSurface => previewModel != null
-            ? previewModel.GetComponentInChildren<DogFaceSurface>(true) : null;
+        public DogFaceSurface FaceSurface => previewModel != null ? previewModel.FaceSurface : null;
 
         private void Awake()
         {
@@ -46,15 +45,15 @@ namespace DogSimulator.UI
             displayedModelId = modelId;
             if (previewModel != null)
             {
-                previewModel.SetActive(false);
-                Destroy(previewModel);
+                previewModel.gameObject.SetActive(false);
+                Destroy(previewModel.gameObject);
             }
             previewAnchor.localRotation = Quaternion.identity;
             previewModel = DogVisualPresenter.InstantiateVisual(entry, previewAnchor);
             previewModel.name = $"Preview_{entry.ModelId}_{entry.DisplayName}";
-            PrepareHierarchy(previewModel.transform);
-            var animator = previewModel.GetComponentInChildren<Animator>(true);
-            if (animator == null) animator = previewModel.AddComponent<Animator>();
+            SetPreviewLayer(previewModel.transform);
+            previewModel.DisablePhysics();
+            var animator = previewModel.Animator;
             animator.runtimeAnimatorController = entry.AnimationController;
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -128,21 +127,15 @@ namespace DogSimulator.UI
                 previewAnchor.Rotate(0f, rotationDegreesPerSecond * Time.unscaledDeltaTime, 0f, Space.Self);
         }
 
-        private static void PrepareHierarchy(Transform root)
+        private static void SetPreviewLayer(Transform root)
         {
             root.gameObject.layer = PreviewLayer;
-            foreach (var collider in root.GetComponents<Collider>()) collider.enabled = false;
-            foreach (var body in root.GetComponents<Rigidbody>())
-            {
-                body.isKinematic = true;
-                body.detectCollisions = false;
-            }
-            for (var i = 0; i < root.childCount; i++) PrepareHierarchy(root.GetChild(i));
+            for (var i = 0; i < root.childCount; i++) SetPreviewLayer(root.GetChild(i));
         }
 
         private void FrameModel()
         {
-            var renderers = previewModel.GetComponentsInChildren<Renderer>(true);
+            var renderers = previewModel.Renderers;
             if (renderers.Length == 0) return;
             var bounds = renderers[0].bounds;
             for (var i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);

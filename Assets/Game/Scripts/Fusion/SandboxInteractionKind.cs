@@ -6,6 +6,9 @@ namespace DogSimulator.Networking
         Pickup,
         Drop,
         Throw,
-        ResetYard
+        ResetYard,
+        RespawnBone,
+        ResetMission,
+        UseJail
     }
 }

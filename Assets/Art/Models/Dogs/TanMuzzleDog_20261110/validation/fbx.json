@@ -1,0 +1,118 @@
+{
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "FaceSurface",
+      "vertices": 45,
+      "triangles": 60,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
+      "name": "TanMuzzleDog_Body",
+      "vertices": 276,
+      "triangles": 486,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "BlankFace_Default.png",
+      "size": [
+        512,
+        512
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        1.0,
+        61.0
+      ],
+      "duration_seconds": 2.0,
+      "sampled_max_vertex_motion": 0.10591333724970434,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        1.0,
+        25.0
+      ],
+      "duration_seconds": 0.8,
+      "sampled_max_vertex_motion": 0.19800006945385307,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        1.0,
+        43.0
+      ],
+      "duration_seconds": 1.4,
+      "sampled_max_vertex_motion": 0.31491714585552855,
+      "loop_endpoint_delta": 0.0043739499012798765
+    },
+    "Bark": {
+      "frames": [
+        1.0,
+        37.0
+      ],
+      "duration_seconds": 1.2,
+      "sampled_max_vertex_motion": 0.1620726548456525,
+      "loop_endpoint_delta": 0.0
+    },
+    "Poop": {
+      "frames": [
+        1.0,
+        109.0
+      ],
+      "duration_seconds": 3.6,
+      "sampled_max_vertex_motion": 0.1398713314605322,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        1.0,
+        97.0
+      ],
+      "duration_seconds": 3.2,
+      "sampled_max_vertex_motion": 0.40640679185604595,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        1.0,
+        28.0
+      ],
+      "duration_seconds": 0.9,
+      "sampled_max_vertex_motion": 0.16150481632052036,
+      "loop_endpoint_delta": 5.586494418938722e-05
+    }
+  },
+  "vertices": 321,
+  "triangles": 546,
+  "max_influences": 4,
+  "face": {
+    "surface": "Single textured face, narrow mouth below the projecting muzzle tip",
+    "uv": "Original front projection, slit at V\u22480.22",
+    "face_triangles": 60,
+    "seam_samples": 414,
+    "max_seam_gap": 0
+  },
+  "mouth": {
+    "lip_v": 0.2200629826607123,
+    "width": 0.12011783570051193,
+    "closed_gap": 0.00360547179601078,
+    "bark_max_gap": 0.05041594355126289,
+    "bite_max_gap": 0.06286581858725483
+  }
+}

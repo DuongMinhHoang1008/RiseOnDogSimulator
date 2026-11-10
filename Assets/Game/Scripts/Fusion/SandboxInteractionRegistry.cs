@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DogSimulator.Networking
 {
     [RequireComponent(typeof(NetworkObject))]
-    public sealed class SandboxInteractionRegistry : NetworkBehaviour, IPlayerLeft
+    public sealed partial class SandboxInteractionRegistry : NetworkBehaviour, IPlayerLeft
     {
         [SerializeField] private GameObject[] carryablePrefabs;
         [SerializeField] private Vector3[] spawnPositions;
@@ -15,6 +15,26 @@ namespace DogSimulator.Networking
         [Networked] private NetworkBool ContentSpawned { get; set; }
         [Networked] public PlayerRef RoomOwner { get; private set; }
         [Networked] public NetworkBool RoomClosing { get; private set; }
+        [Networked] public NetworkId GoldenBoneId { get; private set; }
+        [Networked] public NetworkBool GoldenBoneComplete { get; private set; }
+        [Networked] public NetworkBool GoldenBoneAlert { get; private set; }
+        [Networked] public NetworkBool GateOpen { get; private set; }
+        [Networked] public NetworkBool PlatePressed { get; private set; }
+        private NetworkCarryable missionBone;
+        private NetworkCarryable missionCrate;
+        private readonly List<NetworkCityPedestrian> missionGuards = new();
+        private Vector3 previousBonePosition;
+        private int observedBoneReset;
+        private int observedBoneRelease;
+        private int observedCarrierRespawn;
+        private NetworkId observedCarrier;
+        private bool resetMissionThisTick;
+        private bool presentedGate;
+        private bool presentedPlate;
+
+        internal bool CanDispatchGuards => GoldenBoneAlert && missionBone != null && observedBoneReset == missionBone.ResetSerial;
+
+        internal void BindCity(SimplePolyCityWorld world) => city = world;
         private readonly Dictionary<PlayerRef, (int sequence, TickTimer cooldown)> poopEffects = new();
         private int worldSlot;
         private NetworkCarryable[] persistentProps;
@@ -39,14 +59,22 @@ namespace DogSimulator.Networking
         {
             if (!Object.HasStateAuthority || RoomClosing) return;
             if (!ContentSpawned) SpawnContent();
+            resetMissionThisTick = false;
             var players = NetworkDogPlayer.Active;
             for (var i = 0; i < players.Count; i++)
             {
                 var player = players[i];
                 if (player == null || player.Runner != Runner || player.Object == null || !player.Object.IsValid) continue;
+                if (jailBowl != null) player.CitySandbox = this;
+                UpdatePrisoner(player);
                 ProcessRequest(player);
                 SpawnPoopIfDue(player);
             }
+            UpdateJail();
+            DispatchPolice();
+            foreach (var player in players)
+                if (player.Runner == Runner && player.Object.IsValid) player.DecayHeat();
+            UpdateMission();
             if (Time.unscaledTime < nextSave) return;
             nextSave = Time.unscaledTime + 5f;
             SaveWorld();
@@ -80,6 +108,7 @@ namespace DogSimulator.Networking
 
         private void SpawnCity()
         {
+            SpawnJail();
             var loaded = new Dictionary<string, WorldSaveSlots.PropPose>();
             foreach (var entry in WorldSaveSlots.LoadCity(worldSlot) ?? System.Array.Empty<WorldSaveSlots.CityProp>())
                 if (!string.IsNullOrEmpty(entry.id) && entry.pose.IsValid) loaded[entry.id] = entry.pose;
@@ -109,6 +138,126 @@ namespace DogSimulator.Networking
                 Runner.Spawn(entry.prefab, entry.start, rotation,
                     onBeforeSpawned: (_, obj) => obj.GetComponent<NetworkCityPedestrian>().Initialize(entry));
             }
+            if (city.Course != null) SpawnMission();
+        }
+
+        private void SpawnMission()
+        {
+            missionBone = SpawnProp(city.GoldenBonePrefab, GoldenBoneCourse.Pedestal);
+            missionCrate = SpawnProp(city.MissionCratePrefab, GoldenBoneCourse.CrateSpawn);
+            GoldenBoneId = missionBone.Object.Id;
+            previousBonePosition = GoldenBoneCourse.Pedestal;
+            observedBoneReset = missionBone.ResetSerial;
+            foreach (var route in GoldenBoneCourse.GuardPatrols)
+            {
+                var guard = new SimplePolyCityWorld.PedestrianPlacement
+                {
+                    prefab = city.Pedestrians[0].prefab,
+                    start = route.start,
+                    end = route.end
+                };
+                var facing = Quaternion.LookRotation(route.end - route.start);
+                var npc = Runner.Spawn(guard.prefab, guard.start, facing,
+                    onBeforeSpawned: (_, obj) => obj.GetComponent<NetworkCityPedestrian>().Initialize(guard))
+                    .GetComponent<NetworkCityPedestrian>();
+                npc.AssignGuard(this, missionBone);
+                missionGuards.Add(npc);
+            }
+            city.Course.Present(false, false);
+
+            NetworkCarryable SpawnProp(NetworkObject prefab, Vector3 position)
+            {
+                var prop = Runner.Spawn(prefab, position, Quaternion.identity).GetComponent<NetworkCarryable>();
+                prop.InitializeResetPose(position, Quaternion.identity);
+                return prop;
+            }
+        }
+
+        private void UpdateMission()
+        {
+            if (missionBone == null) return;
+            PlatePressed = !resetMissionThisTick && city.Course.IsPlatePressed();
+            if (PlatePressed || GuardNeedsGate()) GateOpen = true;
+            else if (GateOpen && city.Course.GatePathClear()) GateOpen = false;
+            PresentCourse();
+
+            var position = missionBone.GetMissionPosition(out var carrierRespawn);
+            var teleported = observedBoneReset != missionBone.ResetSerial;
+            var returning = missionBone.IsPedestrianCarried;
+            if (teleported) GoldenBoneAlert = false;
+            if (!GoldenBoneComplete && missionBone.IsCarried && !returning) GoldenBoneAlert = true;
+            if (missionBone.CarrierId.IsValid &&
+                (observedCarrier != missionBone.CarrierId || observedCarrierRespawn != carrierRespawn))
+                previousBonePosition = position;
+            observedCarrier = missionBone.CarrierId;
+            observedCarrierRespawn = carrierRespawn;
+            observedBoneReset = missionBone.ResetSerial;
+            if (observedBoneRelease != missionBone.ReleaseSerial)
+            {
+                observedBoneRelease = missionBone.ReleaseSerial;
+                previousBonePosition = missionBone.LastReleasePosition;
+            }
+            if (!teleported && !resetMissionThisTick && !returning && !GoldenBoneComplete
+                && ReachesDelivery(previousBonePosition, position, GoldenBoneCourse.Delivery))
+            {
+                GoldenBoneComplete = true;
+                GoldenBoneAlert = false;
+            }
+            previousBonePosition = position;
+        }
+
+        private bool GuardNeedsGate()
+        {
+            if (!CanDispatchGuards || !missionBone.IsPedestrianCarried
+                || !Runner.TryFindObject(missionBone.CarrierId, out var guard)) return false;
+            return (guard.transform.position - GoldenBoneCourse.GateClosed).sqrMagnitude < 36f;
+        }
+
+        internal static bool ReachesDelivery(Vector3 from, Vector3 to, Bounds zone)
+        {
+            if (zone.Contains(from) || zone.Contains(to)) return true;
+            var displacement = to - from;
+            return displacement.sqrMagnitude > .000001f
+                && zone.IntersectRay(new Ray(from, displacement.normalized), out var distance)
+                && distance <= displacement.magnitude;
+        }
+
+        private void ResetMission()
+        {
+            if (missionBone == null) return;
+            resetMissionThisTick = true;
+            missionBone.ResetToSpawn();
+            missionCrate.ResetToSpawn();
+            foreach (var guard in missionGuards) guard.ResetPatrol();
+            GoldenBoneComplete = false;
+            GoldenBoneAlert = false;
+        }
+
+        private void PresentCourse()
+        {
+            if (city?.Course == null || (presentedGate == GateOpen && presentedPlate == PlatePressed)) return;
+            city.Course.Present(PlatePressed, GateOpen);
+            presentedGate = GateOpen;
+            presentedPlate = PlatePressed;
+        }
+
+        public override void Render()
+        {
+            PresentJail();
+            PresentCourse();
+            if (!GoldenBoneId.IsValid || !Runner.TryFindObject(GoldenBoneId, out var bone)) return;
+            if (bone.TryGetComponent<NetworkCarryable>(out var carryable)) carryable.PresentGoldenBone();
+        }
+
+        internal static event System.Action<SandboxInteractionRegistry> RegistrySpawned;
+
+        public override void Spawned() => RegistrySpawned?.Invoke(this);
+
+        public override void Despawned(NetworkRunner runner, bool hasState)
+        {
+            city?.Course?.Present(false, false);
+            jail?.Dispose();
+            jail = null;
         }
 
         internal void SaveWorld()
@@ -149,33 +298,73 @@ namespace DogSimulator.Networking
             var source = player.Object.InputAuthority;
             if (ProcessedRequests.TryGet(source, out var processed) && processed >= player.InteractionRequestId) return;
             ProcessedRequests.Set(source, player.InteractionRequestId);
-            if (player.InteractionKind == SandboxInteractionKind.ResetYard)
+            var kind = player.InteractionKind;
+            if (kind == SandboxInteractionKind.UseJail)
             {
-                if (source != RoomOwner && Runner.GameMode != GameMode.Single) return;
-                foreach (var vehicle in NetworkCityVehicle.Active)
-                    if (vehicle.Runner == Runner && vehicle.Object.HasStateAuthority) vehicle.ResetVehicle();
-                foreach (var pedestrian in NetworkCityPedestrian.Active)
-                    if (pedestrian.Runner == Runner && pedestrian.Object.HasStateAuthority) pedestrian.ResetPatrol();
-                for (var i = NetworkCarryable.Active.Count - 1; i >= 0; i--)
-                {
-                    var item = NetworkCarryable.Active[i];
-                    if (item == null || item.Runner != Runner || !item.Object.HasStateAuthority) continue;
-                    if (item.IsTemporary)
-                    {
-                        if (!item.IsCarried) Runner.Despawn(item.Object);
-                    }
-                    else item.ResetToSpawn();
-                }
-                SaveWorld();
+                UseJail(player);
+                return;
+            }
+            if (kind is SandboxInteractionKind.ResetYard or SandboxInteractionKind.ResetMission or SandboxInteractionKind.RespawnBone)
+            {
+                ProcessResetRequest(source, kind);
                 return;
             }
             if (!player.InteractionTarget.IsValid || !Runner.TryFindObject(player.InteractionTarget, out var target)
-                || !target.TryGetComponent<NetworkCarryable>(out var carryable) || !carryable.Object.HasStateAuthority) return;
-            if (player.InteractionKind == SandboxInteractionKind.Drop) carryable.TryDrop(player);
-            else if (player.InteractionKind == SandboxInteractionKind.Throw) carryable.TryThrow(player);
-            else if (player.InteractionKind == SandboxInteractionKind.Pickup
-                && Vector3.Distance(player.MouthAnchor.position, carryable.transform.position) <= player.CarryRange)
-                carryable.TryPickup(player);
+                || !target.HasStateAuthority || player.KnockdownActive || player.SeatedVehicleId.IsValid) return;
+            if (resetMissionThisTick && (target == missionBone?.Object || target == missionCrate?.Object
+                || (target.TryGetComponent<NetworkCityPedestrian>(out var guard) && missionGuards.Contains(guard)))) return;
+            if (target.TryGetComponent<NetworkCarryable>(out var carryable))
+            {
+                if (kind == SandboxInteractionKind.Drop) carryable.TryDrop(player);
+                else if (kind == SandboxInteractionKind.Throw) carryable.TryThrow(player);
+                else if (kind == SandboxInteractionKind.Pickup) carryable.TryPickup(player);
+            }
+            else if (target.TryGetComponent<NetworkCityPedestrian>(out var npc))
+            {
+                if (kind == SandboxInteractionKind.Pickup) npc.TryPickup(player);
+                else if (kind == SandboxInteractionKind.Drop || kind == SandboxInteractionKind.Throw)
+                    npc.Release(player, kind == SandboxInteractionKind.Throw);
+            }
+            else if (target.TryGetComponent<NetworkDogPlayer>(out var dog))
+            {
+                if (kind == SandboxInteractionKind.Pickup) dog.TryBePickedUp(player);
+                else if (kind == SandboxInteractionKind.Drop) dog.ReleaseFromCarrier(player, false);
+            }
+        }
+
+        private void ProcessResetRequest(PlayerRef source, SandboxInteractionKind kind)
+        {
+            if (source != RoomOwner && Runner.GameMode != GameMode.Single) return;
+            if (kind == SandboxInteractionKind.RespawnBone)
+            {
+                missionBone?.ResetToSpawn();
+                return;
+            }
+
+            ResetMission();
+            if (kind == SandboxInteractionKind.ResetMission) return;
+
+            jailBowl?.ResetToSpawn();
+            foreach (var dog in NetworkDogPlayer.Active)
+                if (dog.Runner == Runner && dog.Object.HasStateAuthority) dog.ReleaseHeldTarget();
+            foreach (var vehicle in NetworkCityVehicle.Active)
+                if (vehicle.Runner == Runner && vehicle.Object.HasStateAuthority) vehicle.ResetVehicle();
+            foreach (var pedestrian in NetworkCityPedestrian.Active)
+                if (!pedestrian.IsPolice && !missionGuards.Contains(pedestrian)
+                    && pedestrian.Runner == Runner && pedestrian.Object.HasStateAuthority)
+                    pedestrian.ResetPatrol();
+            for (var i = NetworkCarryable.Active.Count - 1; i >= 0; i--)
+            {
+                var item = NetworkCarryable.Active[i];
+                if (item == null || item == jailBowl || item == missionBone || item == missionCrate
+                    || item.Runner != Runner || !item.Object.HasStateAuthority) continue;
+                if (item.IsTemporary)
+                {
+                    if (!item.IsCarried) Runner.Despawn(item.Object);
+                }
+                else item.ResetToSpawn();
+            }
+            SaveWorld();
         }
 
         public void PlayerLeft(PlayerRef player)

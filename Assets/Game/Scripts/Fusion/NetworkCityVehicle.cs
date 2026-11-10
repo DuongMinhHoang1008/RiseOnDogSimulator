@@ -28,8 +28,11 @@ namespace DogSimulator.Networking
         private readonly Collider[] overlaps = new Collider[24];
         private readonly Dictionary<NetworkDogPlayer, Vector3> pendingImpacts = new();
         private readonly Dictionary<NetworkId, float> hitCooldowns = new();
-        private Rigidbody body;
-        private BoxCollider hull;
+        private readonly Dictionary<NetworkCityPedestrian, (Vector3 impulse, NetworkId driver)> pedestrianImpacts = new();
+        [SerializeField] private Rigidbody body;
+        [SerializeField] private NetworkTransform transformSync;
+        [SerializeField] private NavMeshObstacle obstacle;
+        [SerializeField] private BoxCollider hull;
         private SimplePolyCityWorld.VehiclePlacement layout;
         private Vector3 previousCenter;
         private Quaternion previousRotation;
@@ -38,11 +41,13 @@ namespace DogSimulator.Networking
         private TickTimer controlsExpire;
         private int waypoint;
         private float stuckTime;
+        private float parkedStillTime;
         private float timeWithoutWaypoint;
         private bool resetPending;
 
         internal static IReadOnlyList<NetworkCityVehicle> Active => Vehicles;
         internal Transform Seat => seat;
+        internal Transform DriverDoor => door;
         internal Transform CameraTarget => cameraTarget;
         private bool IsHost => Object != null && Object.IsValid && Object.HasStateAuthority;
 
@@ -50,12 +55,10 @@ namespace DogSimulator.Networking
 
         public override void Spawned()
         {
-            body = GetComponent<Rigidbody>();
-            hull = GetComponent<BoxCollider>();
             if (IsHost) IsTraffic = layout.route != null && layout.route.Length > 1;
             body.isKinematic = !IsHost;
             body.collisionDetectionMode = IsHost ? CollisionDetectionMode.ContinuousDynamic : CollisionDetectionMode.Discrete;
-            if (IsHost && TryGetComponent<NavMeshObstacle>(out var obstacle)) obstacle.enabled = true;
+            if (IsHost && obstacle != null) obstacle.enabled = true;
             previousCenter = transform.TransformPoint(hull.center);
             previousRotation = body.rotation;
             waypoint = 1;
@@ -80,7 +83,7 @@ namespace DogSimulator.Networking
         private bool CanEnter(NetworkDogPlayer player)
         {
             return Object != null && Object.IsValid && !IsTraffic && !DriverId.IsValid && CurrentSpeed <= ExitSpeed
-                && !player.SeatedVehicleId.IsValid && !player.KnockdownActive
+                && !player.SeatedVehicleId.IsValid && !player.KnockdownActive && !player.CarrierId.IsValid
                 && (door.position - player.transform.position).sqrMagnitude < DoorReach * DoorReach;
         }
 
@@ -90,14 +93,13 @@ namespace DogSimulator.Networking
         {
             // Parked brakes hold against a dog's sustained push. Vehicles still respond
             // to PhysX contacts from other vehicles and heavy objects.
-            if (IsTraffic || DriverId.IsValid) body.AddForce(impulse, ForceMode.Impulse);
+            if (IsTraffic || DriverId.IsValid) body.AddForce(Vector3.ClampMagnitude(impulse, body.mass * .05f), ForceMode.Impulse);
         }
 
         internal bool TryEnter(NetworkDogPlayer player)
         {
             if (!IsHost || player.Runner != Runner || !CanEnter(player)) return false;
-            player.GetCarryTarget(out var carrying);
-            if (carrying || !player.TrySit(this)) return false;
+            if (!player.TrySit(this)) return false;
             DriverId = player.Object.Id;
             controls = Vector2.zero;
             return true;
@@ -116,10 +118,18 @@ namespace DogSimulator.Networking
             controlsExpire = TickTimer.CreateFromSeconds(Runner, .15f);
             if (!requestExit) return;
             if (CurrentSpeed > ExitSpeed) { player.SetVehicleExitHint(1); return; }
-            if (!TryExitAt(player, leftExit, out var position) && !TryExitAt(player, rightExit, out position))
-            { player.SetVehicleExitHint(2); return; }
+            if (!TryReleaseDriver(player)) player.SetVehicleExitHint(2);
+        }
+
+        internal bool TryEndDriveForPolice(NetworkDogPlayer player)
+            => IsHost && DriverId == player.Object.Id && CurrentSpeed <= ExitSpeed && TryReleaseDriver(player);
+
+        private bool TryReleaseDriver(NetworkDogPlayer player)
+        {
+            if (!TryExitAt(player, leftExit, out var position) && !TryExitAt(player, rightExit, out position)) return false;
             ClearDriver();
             player.LeaveVehicle(position, transform.rotation);
+            return true;
         }
 
         private bool TryExitAt(NetworkDogPlayer player, Transform anchor, out Vector3 position)
@@ -129,7 +139,7 @@ namespace DogSimulator.Networking
                     Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
                 || ground.rigidbody != null || ground.normal.y < .7f) return false;
 
-            var controller = player.GetComponent<CharacterController>();
+            var controller = player.Controller;
             if (ground.point.y > body.position.y + controller.stepOffset + .06f) return false;
             position = ground.point + Vector3.up * .06f;
             var center = position + transform.rotation * controller.center;
@@ -165,7 +175,6 @@ namespace DogSimulator.Networking
             body.position = layout.placement.position;
             body.rotation = layout.placement.rotation;
             transform.SetPositionAndRotation(body.position, body.rotation);
-            var transformSync = GetComponent<NetworkTransform>();
             transformSync.Teleport(body.position, body.rotation);
             body.linearVelocity = body.angularVelocity = Vector3.zero;
             stepVelocity = Vector3.zero;
@@ -174,9 +183,11 @@ namespace DogSimulator.Networking
             waypoint = 1;
             Speed = 0;
             stuckTime = 0;
+            parkedStillTime = 0;
             timeWithoutWaypoint = 0;
             resetPending = false;
             pendingImpacts.Clear();
+            pedestrianImpacts.Clear();
         }
 
         public override void FixedUpdateNetwork()
@@ -197,6 +208,11 @@ namespace DogSimulator.Networking
                 return;
             }
 
+            DrainPendingImpacts();
+        }
+
+        private void DrainPendingImpacts()
+        {
             foreach (var pair in pendingImpacts)
             {
                 var player = pair.Key;
@@ -209,6 +225,15 @@ namespace DogSimulator.Networking
                 hitCooldowns[player.Object.Id] = Time.fixedTime + .65f;
             }
             pendingImpacts.Clear();
+            foreach (var pair in pedestrianImpacts)
+            {
+                var npc = pair.Key;
+                if (npc == null || npc.Object == null || !npc.Object.IsValid || !npc.IsStanding) continue;
+                if (hitCooldowns.TryGetValue(npc.Object.Id, out var until) && until > Time.fixedTime) continue;
+                npc.QueueHit(pair.Value.impulse, pair.Value.impulse.magnitude, pair.Value.driver, AnnoyingAction.DrivenVehicle);
+                hitCooldowns[npc.Object.Id] = Time.fixedTime + .65f;
+            }
+            pedestrianImpacts.Clear();
         }
 
         // Forces and hull samples run once per PhysX step, even if Fusion advances several ticks.
@@ -237,6 +262,7 @@ namespace DogSimulator.Networking
                 if (!DriverId.IsValid && body.IsSleeping())
                 {
                     stepVelocity = Vector3.zero;
+                    parkedStillTime = 0;
                     return;
                 }
                 stuckTime = Mathf.Abs(controls.y) > .75f && horizontal.magnitude < .3f
@@ -245,6 +271,24 @@ namespace DogSimulator.Networking
             }
 
             var dt = Time.fixedDeltaTime;
+            if (!IsTraffic && !DriverId.IsValid)
+            {
+                var still = body.linearVelocity.sqrMagnitude < .02f && body.angularVelocity.sqrMagnitude < .01f;
+                parkedStillTime = still ? parkedStillTime + dt : 0;
+                if (parkedStillTime > .65f)
+                {
+                    body.Sleep();
+                    stepVelocity = Vector3.zero;
+                    return;
+                }
+                if (horizontal.sqrMagnitude is > .000004f and < .16f)
+                {
+                    body.linearVelocity -= horizontal;
+                    signedSpeed = 0;
+                    horizontal = Vector3.zero;
+                }
+            }
+            else parkedStillTime = 0;
             var change = Mathf.Clamp(targetSpeed - signedSpeed, -16f * dt, 7f * dt);
             var lateral = horizontal - forward * signedSpeed;
             var correction = Vector3.ClampMagnitude(lateral, 9f * dt);
@@ -261,7 +305,6 @@ namespace DogSimulator.Networking
             var toPoint = Vector3.ProjectOnPlane(route[waypoint].position - body.position, Vector3.up);
             var previous = route[(waypoint + route.Length - 1) % route.Length].position;
             var segment = route[waypoint].position - previous;
-            timeWithoutWaypoint += Time.fixedDeltaTime;
             if (toPoint.sqrMagnitude < 4f || Vector3.Dot(toPoint, segment) < 0f && toPoint.sqrMagnitude < 36f)
             {
                 waypoint = (waypoint + 1) % route.Length;
@@ -271,7 +314,12 @@ namespace DogSimulator.Networking
 
             var angle = Vector3.SignedAngle(forward, toPoint, Vector3.up);
             turn = Mathf.Clamp(angle / 32f, -1, 1);
-            targetSpeed = route[waypoint].speed * Mathf.Lerp(1f, .24f, Mathf.InverseLerp(15f, 95f, Mathf.Abs(angle)));
+            var speedAtWaypoint = route[waypoint].speed;
+            var speedBeforeWaypoint = route[(waypoint + route.Length - 1) % route.Length].speed;
+            var laneSpeed = Mathf.Max(speedAtWaypoint, speedBeforeWaypoint);
+            var turnApproachSpeed = Mathf.Sqrt(speedAtWaypoint * speedAtWaypoint + 8f * Mathf.Max(0f, toPoint.magnitude - 2f));
+            targetSpeed = Mathf.Min(laneSpeed, turnApproachSpeed)
+                * Mathf.Lerp(1f, .24f, Mathf.InverseLerp(15f, 95f, Mathf.Abs(angle)));
             var stoppingRange = Mathf.Max(2.4f, speed * speed / 18f + 1.5f);
             var count = Physics.BoxCastNonAlloc(center, CastHalfExtents, forward, casts, body.rotation,
                 stoppingRange, VehicleQueryLayers, QueryTriggerInteraction.Ignore);
@@ -287,13 +335,20 @@ namespace DogSimulator.Networking
                     if (IsWalkingDog(dog)) dogDistance = Mathf.Min(dogDistance, hit.distance);
                     continue;
                 }
+                if (hit.collider.GetComponentInParent<NetworkCityPedestrian>() is { } npc && npc.IsStanding)
+                {
+                    dogDistance = Mathf.Min(dogDistance, hit.distance);
+                    continue;
+                }
                 if (hit.rigidbody != null && hit.rigidbody.mass < 25f) continue;
                 hardDistance = Mathf.Min(hardDistance, hit.distance);
             }
             targetSpeed = Mathf.Min(targetSpeed, Mathf.Sqrt(16f * Mathf.Max(0, hardDistance - 1f)));
-            if (dogDistance < hardDistance && dogDistance < 2.7f) targetSpeed *= .87f;
+            if (dogDistance < hardDistance && dogDistance < 3.5f) targetSpeed *= .83f;
+            if (hardDistance < 4f) return;
+            timeWithoutWaypoint += Time.fixedDeltaTime;
             stuckTime = speed < .4f ? stuckTime + Time.fixedDeltaTime : 0;
-            if (stuckTime > 12f || timeWithoutWaypoint > 22f) resetPending = true;
+            if (stuckTime > 12f || timeWithoutWaypoint > 25f) resetPending = true;
         }
 
         private Vector3 CastHalfExtents => hull.size * .5f - Vector3.up * .035f;
@@ -313,15 +368,18 @@ namespace DogSimulator.Networking
             {
                 var hit = casts[i];
                 if (hit.rigidbody != body && hit.normal.y < .55f
-                    && hit.collider.GetComponentInParent<NetworkDogPlayer>() == null)
+                    && hit.collider.GetComponentInParent<NetworkDogPlayer>() == null
+                    && hit.collider.GetComponentInParent<NetworkCityPedestrian>() == null)
                     obstruction = Mathf.Min(obstruction, hit.distance);
             }
             for (var i = 0; i < count; i++)
             {
                 var hit = casts[i];
                 var player = hit.collider.GetComponentInParent<NetworkDogPlayer>();
-                if (hit.distance <= obstruction && player != null)
-                    QueueImpact(player, stepVelocity);
+                if (hit.distance > obstruction) continue;
+                if (player != null) QueueImpact(player, stepVelocity);
+                var npc = hit.collider.GetComponentInParent<NetworkCityPedestrian>();
+                if (npc != null) QueuePedestrianImpact(npc, stepVelocity, -hit.normal);
             }
         }
 
@@ -330,11 +388,25 @@ namespace DogSimulator.Networking
             if (!IsHost) return;
             var dog = collision.collider.GetComponentInParent<NetworkDogPlayer>();
             if (dog != null) QueueImpact(dog, stepVelocity);
+            var npc = collision.collider.GetComponentInParent<NetworkCityPedestrian>();
+            if (npc != null && collision.contactCount > 0)
+                QueuePedestrianImpact(npc, stepVelocity, -collision.GetContact(0).normal);
+        }
+
+        private void QueuePedestrianImpact(NetworkCityPedestrian npc, Vector3 velocity, Vector3 contactDirection)
+        {
+            if (npc.Runner != Runner || !npc.IsStanding || velocity.sqrMagnitude < 1f) return;
+            var direction = Vector3.ProjectOnPlane(contactDirection, Vector3.up).normalized;
+            var approach = Mathf.Min(velocity.magnitude, Vector3.Dot(velocity - npc.Velocity, direction));
+            if (approach < 1f || (pedestrianImpacts.TryGetValue(npc, out var previous)
+                && previous.impulse.sqrMagnitude >= approach * approach))
+                return;
+            pedestrianImpacts[npc] = (Vector3.Lerp(velocity.normalized, direction, .45f).normalized * approach, DriverId);
         }
 
         private bool IsWalkingDog(NetworkDogPlayer player)
             => player.Object != null && player.Object.IsValid && player.Runner == Runner
-                && player.Object.Id != DriverId && !player.SeatedVehicleId.IsValid;
+                && player.Object.Id != DriverId && !player.SeatedVehicleId.IsValid && !player.CarrierId.IsValid;
 
         private void QueueImpact(NetworkDogPlayer player, Vector3 velocity)
         {

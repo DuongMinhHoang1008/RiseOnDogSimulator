@@ -11,8 +11,8 @@ namespace DogSimulator.Networking
     {
         public const string CreationKey = "creation";
         public const string VersionKey = "build";
-        public const string WorldBuild = "office-world-slots-v2";
-        public const string HostProtocolPrefix = "pc-host-v5-";
+        public const string WorldBuild = "office-world-slots-v4";
+        public const string HostProtocolPrefix = "pc-host-v6-";
 
         public static string ProtocolVersion(NetworkConfig config)
             => HostProtocolPrefix + config.GameVersion;

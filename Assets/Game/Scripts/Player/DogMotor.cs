@@ -8,7 +8,9 @@ namespace DogSimulator.Player
     public sealed class DogMotor : MonoBehaviour
     {
         [SerializeField] private DogMovementConfig config;
-        private CharacterController controller;
+        [SerializeField] private CharacterController controller;
+        [SerializeField] private Collider[] ownColliders = Array.Empty<Collider>();
+        public CharacterController Controller => controller;
         private float verticalSpeed;
         private Vector3 spawnPosition;
         private Quaternion spawnRotation;
@@ -18,11 +20,13 @@ namespace DogSimulator.Player
         private Vector3 externalVelocity;
         private Vector3 simulatedVelocity;
         private bool bouncedThisStep;
+        private float cushionedLandingSpeed;
         private readonly Dictionary<Rigidbody, Vector3> pushContacts = new();
         private Vector3 pushDirection;
         private bool collectPushContacts;
         [SerializeField, Range(2, 4)] private int maxStackDepth = 3;
 
+        public int RespawnSerial { get; private set; }
         public float VerticalSpeed => verticalSpeed;
         public bool JumpedThisStep { get; private set; }
         public float NormalizedSpeed { get; private set; }
@@ -45,9 +49,8 @@ namespace DogSimulator.Player
 
         private void Awake()
         {
-            controller = GetComponent<CharacterController>();
             CaptureRespawnPose();
-            foreach (var ownCollider in GetComponentsInChildren<Collider>(true))
+            foreach (var ownCollider in ownColliders)
                 if (ownCollider != controller) Physics.IgnoreCollision(controller, ownCollider, true);
         }
 
@@ -101,9 +104,12 @@ namespace DogSimulator.Player
             WorldVelocity = travelled / deltaTime;
             NormalizedSpeed = Mathf.Clamp01(new Vector2(travelled.x, travelled.z).magnitude / deltaTime / config.RunSpeed);
             if ((collisions & CollisionFlags.Above) != 0 && verticalSpeed > 0) verticalSpeed = 0;
-            if (!wasGrounded && !bouncedThisStep && landingSpeed >= 9f
-                && (collisions & CollisionFlags.Below) != 0)
-                HardLanding?.Invoke(landingSpeed);
+            if (!wasGrounded && !bouncedThisStep && (collisions & CollisionFlags.Below) != 0)
+            {
+                if (landingSpeed >= Mathf.Max(9f, cushionedLandingSpeed))
+                    HardLanding?.Invoke(landingSpeed);
+                cushionedLandingSpeed = 0;
+            }
             RefreshSupport();
             UpdateSupportAnchorFromCurrentPose();
             if (transform.position.y < config.RespawnBelowY) Respawn();
@@ -181,8 +187,7 @@ namespace DogSimulator.Player
             for (var cursor = ownerMotor; cursor != null;)
             {
                 if (cursor == this) return false;
-                var nextOwner = cursor.CurrentSupportOwner;
-                cursor = nextOwner != null ? nextOwner.GetComponent<DogMotor>() : null;
+                cursor = cursor.currentSupport?.OwnerMotor;
             }
             return true;
         }
@@ -198,8 +203,8 @@ namespace DogSimulator.Player
 
         private void SetSupportCollisionsIgnored(DogBackSupport support, bool ignored)
         {
-            if (support == null || support.OwnerRoot == null) return;
-            foreach (var supportCollider in support.OwnerRoot.GetComponentsInChildren<Collider>(true))
+            if (support == null || support.OwnerMotor == null) return;
+            foreach (var supportCollider in support.OwnerMotor.ownColliders)
             {
                 if (supportCollider == null || supportCollider == controller
                     || supportCollider.transform.IsChildOf(transform)) continue;
@@ -215,6 +220,7 @@ namespace DogSimulator.Player
             {
                 ClearSupport();
                 verticalSpeed = pad.BounceSpeed;
+                cushionedLandingSpeed = pad.CushionLanding ? pad.BounceSpeed + 1f : 0;
                 JumpedThisStep = true;
                 bouncedThisStep = true;
                 return;
@@ -238,12 +244,14 @@ namespace DogSimulator.Player
             NormalizedSpeed = 0;
             JumpedThisStep = false;
             WorldVelocity = Vector3.zero;
+            cushionedLandingSpeed = 0;
             externalVelocity = simulatedVelocity = Vector3.zero;
         }
 
         public void ApplyKnockback(Vector3 impulse)
         {
             ClearSupport();
+            cushionedLandingSpeed = 0;
             externalVelocity += new Vector3(impulse.x, 0, impulse.z);
             externalVelocity = Vector3.ClampMagnitude(externalVelocity, 15f);
             verticalSpeed = Mathf.Max(verticalSpeed, Mathf.Clamp(impulse.y, 0, 10f));
@@ -252,6 +260,7 @@ namespace DogSimulator.Player
         public void Respawn()
         {
             if (controller == null) return;
+            RespawnSerial++;
             var wasEnabled = controller.enabled;
             controller.enabled = false;
             transform.SetPositionAndRotation(spawnPosition, spawnRotation);

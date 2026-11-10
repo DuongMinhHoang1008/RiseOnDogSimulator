@@ -8,17 +8,28 @@ namespace DogSimulator.Player
         [SerializeField] private InputActionAsset actions;
         [SerializeField] private DogMovementConfig config;
         private InputActionAsset runtimeActions;
+        private InputActionMap playerActions;
         private InputAction move;
         private InputAction look;
         private InputAction sprint;
         private InputAction jump;
-        private InputAction bark, bite, poop, pee, primaryCarry, dropCarry, resetYard;
+        private InputAction bark;
+        private InputAction bite;
+        private InputAction poop;
+        private InputAction pee;
+        private InputAction primaryCarry;
+        private InputAction dropCarry;
+        private InputAction resetYard;
+        private InputAction respawnBone;
+        private InputAction resetMission;
         private DogAction pendingAction;
         private float actionExpires = float.NegativeInfinity;
         private float jumpExpires = float.NegativeInfinity;
         private float primaryCarryExpires = float.NegativeInfinity;
         private float dropCarryExpires = float.NegativeInfinity;
-        private float resetExpires = float.NegativeInfinity;
+        private float resetYardExpires = float.NegativeInfinity;
+        private float respawnBoneExpires = float.NegativeInfinity;
+        private float resetMissionExpires = float.NegativeInfinity;
 
         public bool GameplayEnabled { get; private set; }
         public Vector2 Move { get; private set; }
@@ -35,30 +46,35 @@ namespace DogSimulator.Player
             }
             runtimeActions = Instantiate(actions);
             runtimeActions.bindingMask = InputBinding.MaskByGroup("Keyboard&Mouse");
-            move = runtimeActions.FindAction("Player/Move", true);
-            look = runtimeActions.FindAction("Player/Look", true);
-            sprint = runtimeActions.FindAction("Player/Sprint", true);
-            jump = runtimeActions.FindAction("Player/Jump", true);
-            var map = runtimeActions.FindActionMap("Player", true);
-            bark = Action(map, "Bark", "<Keyboard>/f");
-            bite = Action(map, "Bite", "<Mouse>/rightButton");
-            poop = Action(map, "Poop", "<Keyboard>/g");
-            pee = Action(map, "Pee", "<Keyboard>/h");
+            playerActions = runtimeActions.FindActionMap("Player", true);
+            move = playerActions.FindAction("Move", true);
+            look = playerActions.FindAction("Look", true);
+            sprint = playerActions.FindAction("Sprint", true);
+            jump = playerActions.FindAction("Jump", true);
+            bark = FindOrAddButton("Bark", "<Keyboard>/f");
+            bite = FindOrAddButton("Bite", "<Mouse>/rightButton");
+            poop = FindOrAddButton("Poop", "<Keyboard>/g");
+            pee = FindOrAddButton("Pee", "<Keyboard>/h");
             // Use dedicated runtime actions so legacy Interact/Throw bindings in the
             // input asset cannot make one press dispatch two carry commands.
-            primaryCarry = Action(map, "PrimaryCarry", "<Mouse>/leftButton");
-            dropCarry = Action(map, "DropCarry", "<Keyboard>/e");
-            resetYard = Action(map, "ResetYard", "<Keyboard>/r");
+            primaryCarry = FindOrAddButton("PrimaryCarry", "<Mouse>/leftButton");
+            dropCarry = FindOrAddButton("DropCarry", "<Keyboard>/e");
+            resetYard = FindOrAddButton("ResetYard", "<Keyboard>/r");
+            respawnBone = FindOrAddButton("RespawnBone", "<Keyboard>/f6");
+            resetMission = FindOrAddButton("ResetMission", "<Keyboard>/f7");
         }
 
-        private static InputAction Action(InputActionMap map, string name, string binding)
+        private InputAction FindOrAddButton(string name, string binding)
         {
-            var existing = map.FindAction(name);
+            var existing = playerActions.FindAction(name);
             if (existing != null) return existing;
-            var action = map.AddAction(name, InputActionType.Button);
+            var action = playerActions.AddAction(name, InputActionType.Button);
             action.AddBinding(binding, groups: "Keyboard&Mouse");
             return action;
         }
+
+        public string GetBindingLabel(string actionName)
+            => playerActions?.FindAction(actionName)?.GetBindingDisplayString(group: "Keyboard&Mouse") ?? "";
 
         public void SetGameplayEnabled(bool value)
         {
@@ -68,9 +84,13 @@ namespace DogSimulator.Player
             jumpExpires = float.NegativeInfinity;
             pendingAction = DogAction.None;
             actionExpires = float.NegativeInfinity;
-            primaryCarryExpires = dropCarryExpires = resetExpires = float.NegativeInfinity;
+            primaryCarryExpires = float.NegativeInfinity;
+            dropCarryExpires = float.NegativeInfinity;
+            resetYardExpires = float.NegativeInfinity;
+            respawnBoneExpires = float.NegativeInfinity;
+            resetMissionExpires = float.NegativeInfinity;
             if (runtimeActions == null) return;
-            if (GameplayEnabled) runtimeActions.FindActionMap("Player").Enable();
+            if (GameplayEnabled) playerActions.Enable();
             else runtimeActions.Disable();
         }
 
@@ -80,43 +100,47 @@ namespace DogSimulator.Player
             Move = Vector2.ClampMagnitude(move.ReadValue<Vector2>(), 1);
             Look = look.ReadValue<Vector2>();
             Sprint = sprint.IsPressed();
-            if (jump.WasPressedThisFrame())
-                jumpExpires = Time.unscaledTime + config.JumpBufferSeconds;
-            if (bark.WasPressedThisFrame()) QueueAction(DogAction.Bark);
-            if (poop.WasPressedThisFrame()) QueueAction(DogAction.Poop);
-            if (pee.WasPressedThisFrame()) QueueAction(DogAction.Pee);
-            if (bite.WasPressedThisFrame()) QueueAction(DogAction.Bite);
-            if (primaryCarry.WasPressedThisFrame())
-                primaryCarryExpires = Time.unscaledTime + config.ActionBufferSeconds;
-            if (dropCarry.WasPressedThisFrame())
-                dropCarryExpires = Time.unscaledTime + config.ActionBufferSeconds;
-            if (resetYard.WasPressedThisFrame()) resetExpires = Time.unscaledTime + config.ActionBufferSeconds;
+            var now = Time.unscaledTime;
+            BufferPress(jump, now + config.JumpBufferSeconds, ref jumpExpires);
+            var commandExpires = now + config.ActionBufferSeconds;
+            // Later actions take priority when several are pressed in the same frame.
+            if (bark.WasPressedThisFrame()) QueueAction(DogAction.Bark, commandExpires);
+            if (poop.WasPressedThisFrame()) QueueAction(DogAction.Poop, commandExpires);
+            if (pee.WasPressedThisFrame()) QueueAction(DogAction.Pee, commandExpires);
+            if (bite.WasPressedThisFrame()) QueueAction(DogAction.Bite, commandExpires);
+            BufferPress(primaryCarry, commandExpires, ref primaryCarryExpires);
+            BufferPress(dropCarry, commandExpires, ref dropCarryExpires);
+            BufferPress(resetYard, commandExpires, ref resetYardExpires);
+            BufferPress(respawnBone, commandExpires, ref respawnBoneExpires);
+            BufferPress(resetMission, commandExpires, ref resetMissionExpires);
         }
 
-        private void QueueAction(DogAction action)
+        private static void BufferPress(InputAction button, float deadline, ref float expires)
+        {
+            if (button.WasPressedThisFrame()) expires = deadline;
+        }
+
+        private void QueueAction(DogAction action, float deadline)
         {
             pendingAction = action;
-            actionExpires = Time.unscaledTime + config.ActionBufferSeconds;
+            actionExpires = deadline;
         }
 
         public DogAction ConsumeAction()
         {
-            var action = GameplayEnabled && Time.unscaledTime <= actionExpires ? pendingAction : DogAction.None;
-            pendingAction = DogAction.None;actionExpires = float.NegativeInfinity;
+            var action = ConsumeBuffered(ref actionExpires) ? pendingAction : DogAction.None;
+            pendingAction = DogAction.None;
             return action;
         }
 
         // The network driver will call this once per FixedUpdateNetwork; preview uses FixedUpdate.
-        public bool ConsumeJump()
-        {
-            var buffered = GameplayEnabled && Time.unscaledTime <= jumpExpires;
-            jumpExpires = float.NegativeInfinity;
-            return buffered;
-        }
+        public bool ConsumeJump() => ConsumeBuffered(ref jumpExpires);
 
         public bool ConsumePrimaryCarry() => ConsumeBuffered(ref primaryCarryExpires);
         public bool ConsumeDropCarry() => ConsumeBuffered(ref dropCarryExpires);
-        public bool ConsumeResetYard() => ConsumeBuffered(ref resetExpires);
+        public bool ConsumeResetYard() => ConsumeBuffered(ref resetYardExpires);
+        public bool ConsumeRespawnBone() => ConsumeBuffered(ref respawnBoneExpires);
+        public bool ConsumeResetMission() => ConsumeBuffered(ref resetMissionExpires);
 
         private bool ConsumeBuffered(ref float expires)
         {

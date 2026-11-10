@@ -1,0 +1,39 @@
+{
+  "subject_reference": "MrDog.png",
+  "style_reference": "SimplePoly City boxy Shiba turnaround",
+  "rig_reference": "BlankFaceDog_20261107",
+  "vertices": 233,
+  "triangles": 422,
+  "bones": 27,
+  "clips": {
+    "Idle": [
+      1.0,
+      61.0
+    ],
+    "Run": [
+      1.0,
+      25.0
+    ],
+    "Jump": [
+      1.0,
+      43.0
+    ],
+    "Bark": [
+      1.0,
+      37.0
+    ],
+    "Poop": [
+      1.0,
+      109.0
+    ],
+    "Pee": [
+      1.0,
+      97.0
+    ],
+    "Bite": [
+      1.0,
+      28.0
+    ]
+  },
+  "face_layout_version": 1
+}

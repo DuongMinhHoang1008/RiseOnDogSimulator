@@ -41,10 +41,7 @@ namespace DogSimulator.Editor
 
             if (!AssetDatabase.IsValidFolder(PrefabFolder)) AssetDatabase.CreateFolder("Assets/Game/Prefabs", "SimplePolyCity");
             var material = CreateVehicleMaterial();
-            var demo = EditorSceneManager.OpenScene(DemoPath);
-            if (!EditorSceneManager.SaveScene(demo, ScenePath, true))
-                throw new InvalidOperationException("Could not copy the demo scene.");
-            var scene = EditorSceneManager.OpenScene(ScenePath);
+            var scene = EditorSceneManager.OpenScene(DemoPath);
             var originals = scene.GetRootGameObjects()
                 .SelectMany(root => root.GetComponentsInChildren<Transform>(true))
                 .Where(t => PrefabUtility.IsOutermostPrefabInstanceRoot(t.gameObject))
@@ -66,7 +63,8 @@ namespace DogSimulator.Editor
                 }
             }
 
-            var route = CreateRoute();
+            var route = CreateRoute(false);
+            var inbound = CreateRoute(true);
             var props = new List<SimplePolyCityWorld.Placement>();
             var vehicles = new List<SimplePolyCityWorld.VehiclePlacement>();
             var garageMoves = new List<(int index, string name, Bounds hull)>();
@@ -75,7 +73,10 @@ namespace DogSimulator.Editor
             {
                 ["Vehicle_Car_color02 (3)"] = 0,
                 ["Vehicle_Car_color03"] = route.Length / 2,
-                ["Vehicle_Pick up Truck_color03"] = route.Length * 3 / 4
+                ["Vehicle_Pick up Truck_color03"] = route.Length * 3 / 4,
+                ["Vehicle_Car_color02 (2)"] = inbound.Length,
+                ["Vehicle_Car_color01 (2)"] = inbound.Length + inbound.Length / 2,
+                ["Vehicle_Car_color01 (1)"] = inbound.Length + inbound.Length * 3 / 4
             };
             foreach (var (root, path) in originals.OrderBy(entry => StableId(entry.root), StringComparer.Ordinal))
             {
@@ -112,10 +113,11 @@ namespace DogSimulator.Editor
                 {
                     var box = placement.prefab.GetComponent<BoxCollider>();
                     var hull = new Bounds(box.center, box.size);
-                    var blocksLane = BlocksRoute(placement, hull, route);
+                    var blocksLane = BlocksRoute(placement, hull, route) || BlocksRoute(placement, hull, inbound);
                     if (trafficStarts.TryGetValue(root.name, out var start))
                     {
-                        var loop = Enumerable.Range(0, route.Length).Select(i => route[(start + i) % route.Length]).ToArray();
+                        var lane = start >= route.Length ? inbound : route;
+                        var loop = Enumerable.Range(0, lane.Length).Select(i => lane[(start + i) % lane.Length]).ToArray();
                         placement.position = loop[0].position;
                         placement.rotation = Quaternion.LookRotation(loop[1].position - loop[0].position);
                         vehicles.Add(new SimplePolyCityWorld.VehiclePlacement { placement = placement, route = loop });
@@ -132,7 +134,6 @@ namespace DogSimulator.Editor
 
             Physics.SyncTransforms();
             MoveLaneBlockers(vehicles, garageMoves);
-            BakePedestrianNavMesh();
             var preview = EditorSceneManager.OpenScene(FusionPreviewSetup.ScenePath, OpenSceneMode.Additive);
             try
             {
@@ -171,10 +172,20 @@ namespace DogSimulator.Editor
             serialized.FindProperty("config").objectReferenceValue = cityConfig;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             WriteWorld(city, props, vehicles, spawns.ToArray());
-            WritePedestrians(city, vehicles);
+            var navigation = BakePedestrianNavMesh();
+            try { WritePedestrians(city, vehicles); }
+            finally { navigation.RemoveData(); }
+            SavePedestrianNavMesh(navigation);
+            var mission = new SerializedObject(city);
+            mission.FindProperty("goldenBonePrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/Game/Prefabs/Carryables/CarryableBone.prefab");
+            mission.FindProperty("missionCratePrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/Game/Prefabs/Carryables/CarryableCrate.prefab");
+            mission.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+                throw new InvalidOperationException("Could not save the generated gameplay scene.");
             if (!EditorBuildSettings.scenes.Any(entry => entry.path == ScenePath))
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes.Append(new EditorBuildSettingsScene(ScenePath, true)).ToArray();
             AssetDatabase.SaveAssets();
@@ -257,7 +268,7 @@ namespace DogSimulator.Editor
                 box.center = bounds.center;
                 box.size = bounds.size * .96f;
                 var body = root.AddComponent<Rigidbody>();
-                body.mass = vehicle ? Mathf.Clamp(bounds.size.z * 750f, 3000f, 9500f) : mass;
+                body.mass = vehicle ? 1.5f * Mathf.Clamp(bounds.size.z * 750f, 3000f, 9500f) : mass;
                 root.AddComponent<NetworkObject>();
                 root.AddComponent<NetworkTransform>();
                 if (!vehicle)
@@ -314,10 +325,13 @@ namespace DogSimulator.Editor
             finally { Object.DestroyImmediate(root); }
         }
 
-        private static SimplePolyCityWorld.RoutePoint[] CreateRoute()
+        private static SimplePolyCityWorld.RoutePoint[] CreateRoute(bool inbound)
         {
-            var corners = new[] { new Vector3(63.3f, 0, -3.3f), new Vector3(63.3f, 0, 63.3f),
-                new Vector3(-3.3f, 0, 63.3f), new Vector3(-3.3f, 0, -3.3f) };
+            var min = inbound ? 3.3f : -3.3f;
+            var max = 60f - min;
+            var corners = new[] { new Vector3(max, 0, min), new Vector3(max, 0, max),
+                new Vector3(min, 0, max), new Vector3(min, 0, min) };
+            if (inbound) Array.Reverse(corners);
             var points = new List<SimplePolyCityWorld.RoutePoint>();
             for (var i = 0; i < corners.Length; i++)
             {
@@ -326,7 +340,7 @@ namespace DogSimulator.Editor
                 var next = corners[(i + 1) % 4];
                 var before = corner + (last - corner).normalized * 7f;
                 var after = corner + (next - corner).normalized * 7f;
-                points.Add(new SimplePolyCityWorld.RoutePoint { position = (last + corner) * .5f, speed = 9f });
+                points.Add(new SimplePolyCityWorld.RoutePoint { position = (last + corner) * .5f, speed = 12f });
                 points.Add(new SimplePolyCityWorld.RoutePoint { position = before, speed = 5f });
                 for (var step = 1; step <= 3; step++)
                 {

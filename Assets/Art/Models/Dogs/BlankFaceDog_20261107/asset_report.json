@@ -1,10 +1,9 @@
 {
   "source": "D:\\IT\\Game\\RiseOnDogSimulator\\Assets\\Art\\ReferenceDog\\realistic_low_vertex\\Dog_Rigged.blend",
-  "body_vertices": 5828,
-  "face_vertices": 531,
-  "vertices_total": 6359,
-  "triangles_total": 12526,
-  "extracted_face_polygons": 639,
+  "body_vertices": 680,
+  "face_vertices": 16,
+  "vertices_total": 696,
+  "triangles_total": 1296,
   "bones": 27,
   "face_layout_version": 1,
   "face_uv": "0..1 full rectangle",
@@ -38,5 +37,5 @@
       28.0
     ]
   },
-  "limitations": "face is rigid on Head; Bark/Bite move the head and jaw but do not deform the 2D player image"
+  "limitations": "face is rigid on Head; Bark/Bite move the head while the player image stays rigid"
 }

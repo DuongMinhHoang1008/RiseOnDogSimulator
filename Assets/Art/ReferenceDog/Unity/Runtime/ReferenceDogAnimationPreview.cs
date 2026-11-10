@@ -20,7 +20,6 @@ namespace ReferenceDog.Animation
 
         private void OnEnable()
         {
-            if (animator == null) animator = GetComponentInChildren<Animator>();
             showcaseIndex = 0;
             nextChange = Time.time + HoldSeconds[0];
         }

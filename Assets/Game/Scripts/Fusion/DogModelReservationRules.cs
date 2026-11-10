@@ -19,9 +19,12 @@ namespace DogSimulator.Networking
             PlayerRef player, int modelId, DogModelCatalog catalog)
         {
             if (!player.IsRealPlayer) return ModelSelectionResult.PlayerUnavailable;
-            if (catalog == null || !catalog.IsValidModelId(modelId)) return ModelSelectionResult.InvalidModel;
+            if (!IsValidModel(catalog, modelId)) return ModelSelectionResult.InvalidModel;
             reservations[player] = modelId;
             return ModelSelectionResult.Approved;
         }
+
+        internal static bool IsValidModel(DogModelCatalog catalog, int modelId)
+            => catalog != null && catalog.IsValidModelId(modelId);
     }
 }

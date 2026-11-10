@@ -8,16 +8,16 @@
   "meshes": [
     {
       "name": "BlankFaceDog_Body",
-      "vertices": 5828,
-      "triangles": 11592,
+      "vertices": 680,
+      "triangles": 1274,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
     },
     {
       "name": "FaceSurface",
-      "vertices": 531,
-      "triangles": 934,
+      "vertices": 16,
+      "triangles": 22,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
@@ -33,46 +33,6 @@
       "available": true,
       "packed": true,
       "color_space": "sRGB"
-    },
-    {
-      "name": "BlankFace_Default.001",
-      "size": [
-        512,
-        512
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "Non-Color"
-    },
-    {
-      "name": "Dog_BaseColor",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "sRGB"
-    },
-    {
-      "name": "Dog_BaseColor.001",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "Non-Color"
-    },
-    {
-      "name": "Dog_Normal",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "Non-Color"
     }
   ],
   "actions": {
@@ -82,7 +42,7 @@
         61.0
       ],
       "duration_seconds": 2.0,
-      "sampled_max_vertex_motion": 0.11256506999049852,
+      "sampled_max_vertex_motion": 0.10397152562624301,
       "loop_endpoint_delta": 0.0
     },
     "Run": {
@@ -91,7 +51,7 @@
         25.0
       ],
       "duration_seconds": 0.8,
-      "sampled_max_vertex_motion": 0.20773812277977344,
+      "sampled_max_vertex_motion": 0.21374486743706328,
       "loop_endpoint_delta": 0.0
     },
     "Jump": {
@@ -100,8 +60,8 @@
         43.0
       ],
       "duration_seconds": 1.4,
-      "sampled_max_vertex_motion": 0.31379514063446834,
-      "loop_endpoint_delta": 0.004428553875880414
+      "sampled_max_vertex_motion": 0.3210904887265388,
+      "loop_endpoint_delta": 0.005246085743845745
     },
     "Bark": {
       "frames": [
@@ -109,7 +69,7 @@
         37.0
       ],
       "duration_seconds": 1.2,
-      "sampled_max_vertex_motion": 0.17222336351198747,
+      "sampled_max_vertex_motion": 0.1590546878072315,
       "loop_endpoint_delta": 0.0
     },
     "Poop": {
@@ -118,7 +78,7 @@
         109.0
       ],
       "duration_seconds": 3.6,
-      "sampled_max_vertex_motion": 0.15555463722540355,
+      "sampled_max_vertex_motion": 0.1499493231472319,
       "loop_endpoint_delta": 0.0
     },
     "Pee": {
@@ -127,7 +87,7 @@
         97.0
       ],
       "duration_seconds": 3.2,
-      "sampled_max_vertex_motion": 0.33764252277623674,
+      "sampled_max_vertex_motion": 0.4100930596675526,
       "loop_endpoint_delta": 0.0
     },
     "Bite": {
@@ -136,12 +96,12 @@
         28.0
       ],
       "duration_seconds": 0.9,
-      "sampled_max_vertex_motion": 0.1714358702685941,
-      "loop_endpoint_delta": 3.32490287893098e-05
+      "sampled_max_vertex_motion": 0.15854625732066618,
+      "loop_endpoint_delta": 0.0
     }
   },
-  "vertices": 6359,
-  "triangles": 12526,
+  "vertices": 696,
+  "triangles": 1296,
   "max_influences": 4,
   "status": "PASS"
 }

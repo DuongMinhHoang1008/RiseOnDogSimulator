@@ -3929,6 +3929,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.Player.DogMotor
   config: {fileID: 11400000, guid: 55671ee4bbc9b7645abc8088bc2db260, type: 2}
+  controller: {fileID: 1057453013}
+  ownColliders:
+  - {fileID: 1057453013}
+  maxStackDepth: 3
 --- !u!114 &1057453010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3973,6 +3977,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.Player.LocalMovementPreview
   followCamera: {fileID: 1363344301}
+  input: {fileID: 1057453010}
+  animations: {fileID: 1057453015}
 --- !u!143 &1057453013
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4015,6 +4021,8 @@ MonoBehaviour:
   visualRoot: {fileID: 133496242}
   defaultVisual: {fileID: 2091677343}
   mouthAnchor: {fileID: 0}
+  defaultFaceSurface: {fileID: 2091677346}
+  defaultPeePelvis: {fileID: 2091677345}
 --- !u!114 &1057453015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4029,6 +4037,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.Player.DogAnimationDriver
   config: {fileID: 11400000, guid: a1b2db46e35e39e4c91fcb2e53d235fa, type: 2}
   visual: {fileID: 1057453014}
+  motor: {fileID: 1057453009}
 --- !u!1 &1102088345
 GameObject:
   m_ObjectHideFlags: 0
@@ -5234,6 +5243,7 @@ MonoBehaviour:
   backButton: {fileID: 1580536679}
   input: {fileID: 1057453010}
   motor: {fileID: 1057453009}
+  controls: {fileID: 272232158}
 --- !u!114 &1585236978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6684,6 +6694,22 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 3565161635485473760, guid: 180fe33efb57edd47a9216a681dc9425, type: 3}
   m_PrefabInstance: {fileID: 2091677341}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &2091677345 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7532073197372927866, guid: 180fe33efb57edd47a9216a681dc9425, type: 3}
+  m_PrefabInstance: {fileID: 2091677341}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2091677346 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7565910101876191665, guid: 180fe33efb57edd47a9216a681dc9425, type: 3}
+  m_PrefabInstance: {fileID: 2091677341}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e3b5eb5bc0bf264091a175421b74b3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.CustomDogFace.DogFaceSurface
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

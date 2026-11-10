@@ -220,8 +220,31 @@ MonoBehaviour:
   carriedLocalPosition: {x: 0, y: 0, z: 0.22}
   carriedLocalEuler: {x: 0, y: 0, z: 0}
   rollsWhenFree: 1
+  rollingLinearDamping: 0.55
+  rollingAngularDamping: 1.8
+  nonRollingLinearDamping: 1.1
+  nonRollingAngularDamping: 2.5
+  lifetimeSeconds: 0
+  dropClearance: {fileID: 0}
   _CarrierId:
     Raw: 0
   _ResetPosition: {x: 0, y: 0, z: 0}
   _ResetRotation: {x: 0, y: 0, z: 0, w: 0}
   _Revision: 0
+  _ImpactTargetId:
+    Raw: 0
+  _ImpactImpulse: {x: 0, y: 0, z: 0}
+  _ImpactRequestId: 0
+  _WasThrown:
+    RawValue: 0
+  _ImpactForcesKnockdown:
+    RawValue: 0
+  body: {fileID: 7932277565519796352}
+  transformSync: {fileID: 5947034247649022314}
+  goldenRenderers:
+  - {fileID: 3297512641276412752}
+  colliders:
+  - {fileID: 6400150401296335336}
+  bowlVisual: {fileID: 0}
+  crateRenderer: {fileID: 0}
+  crateCollider: {fileID: 0}

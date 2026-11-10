@@ -88,3 +88,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: DogSimulator.Runtime::DogSimulator.CustomDogFace.DogFaceSurface
   targetRenderer: {fileID: 8024064574478096353}
   layoutVersion: 1
+  portraitMaterial: {fileID: 2100000, guid: b5e5bedb1a648d1418db847d1856b8d1, type: 2}

@@ -1,0 +1,111 @@
+{
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "FaceSurface",
+      "vertices": 4,
+      "triangles": 2,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
+      "name": "MrDogBoxy_Body",
+      "vertices": 830,
+      "triangles": 420,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "BlankFace_Default",
+      "size": [
+        512,
+        512
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        0.8000000715255737,
+        48.79999923706055
+      ],
+      "duration_seconds": 1.999999965230624,
+      "sampled_max_vertex_motion": 0.0771506895701594,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        0.8000000715255737,
+        20.0
+      ],
+      "duration_seconds": 0.7999999970197678,
+      "sampled_max_vertex_motion": 0.1980001635267813,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        0.8000000715255737,
+        34.39999771118164
+      ],
+      "duration_seconds": 1.3999999016523361,
+      "sampled_max_vertex_motion": 0.31793635779849416,
+      "loop_endpoint_delta": 0.0044121704500413705
+    },
+    "Bark": {
+      "frames": [
+        0.8000000715255737,
+        29.600000381469727
+      ],
+      "duration_seconds": 1.2000000129143398,
+      "sampled_max_vertex_motion": 0.11806334437540522,
+      "loop_endpoint_delta": 0.0
+    },
+    "Poop": {
+      "frames": [
+        0.8000000715255737,
+        87.20000457763672
+      ],
+      "duration_seconds": 3.600000187754631,
+      "sampled_max_vertex_motion": 0.1487401706896873,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        0.8000000715255737,
+        77.5999984741211
+      ],
+      "duration_seconds": 3.19999993344148,
+      "sampled_max_vertex_motion": 0.44729504426044575,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        0.8000000715255737,
+        22.399999618530273
+      ],
+      "duration_seconds": 0.8999999811251959,
+      "sampled_max_vertex_motion": 0.12020570052551018,
+      "loop_endpoint_delta": 0.0
+    }
+  },
+  "vertices": 834,
+  "triangles": 422,
+  "max_influences": 4,
+  "face": {
+    "projection": "Planar front quad, 0-1 UV0, U right and V up",
+    "default_image": "Solid 512 x 512 PNG, no body textures",
+    "weight": "Head 100%",
+    "seam_samples": 331,
+    "max_seam_gap": 0
+  }
+}

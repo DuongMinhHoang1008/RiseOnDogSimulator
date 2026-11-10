@@ -3,7 +3,27 @@ guid: e10986386598aac4880315e8658e2137
 ModelImporter:
   serializedVersion: 24300
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Block_Coat
+    second: {fileID: 2100000, guid: 35ab479401a0ead4db2ca6bb9f141771, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Block_Cream
+    second: {fileID: 2100000, guid: 58b6dc0fc70538e4e800f82de91c3a48, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Block_Ears
+    second: {fileID: 2100000, guid: 4f98d7ec144a1b84088409784776a93c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: FaceSurface_Blank
+    second: {fileID: 2100000, guid: 35ab479401a0ead4db2ca6bb9f141771, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

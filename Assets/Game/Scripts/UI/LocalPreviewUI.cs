@@ -19,13 +19,13 @@ namespace DogSimulator.UI
         [SerializeField] private UnityEngine.UI.Button backButton;
         [SerializeField] private DogInputReader input;
         [SerializeField] private DogMotor motor;
+        [SerializeField] private TMP_Text controls;
         private bool playing;
 
         private void Awake()
         {
             nickname.richText = roomCode.richText = false;
-            foreach (var text in GetComponentsInChildren<TMP_Text>(true))
-                if (text.name == "Controls") text.text = DogAnimationDriver.Controls;
+            if (controls != null) controls.text = DogAnimationDriver.Controls;
             nickname.text = PlayerPrefs.GetString("DogSimulator.Nickname", "Guest");
             message.text = "Rigged dog ready. Local movement and action animations; no network connection.";
             playButton.onClick.AddListener(Play);

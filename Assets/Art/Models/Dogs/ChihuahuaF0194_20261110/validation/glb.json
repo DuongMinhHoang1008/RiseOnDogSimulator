@@ -1,0 +1,163 @@
+{
+  "errors": [],
+  "warnings": [],
+  "rig": "Dog_Rig",
+  "bones": 27,
+  "meshes": [
+    {
+      "name": "ChihuahuaF0194_Body",
+      "vertices": 1038,
+      "triangles": 542,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
+      "name": "FaceSurface",
+      "vertices": 116,
+      "triangles": 60,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    }
+  ],
+  "textures": [
+    {
+      "name": "BlankFace_Default",
+      "size": [
+        512,
+        512
+      ],
+      "available": true,
+      "packed": true,
+      "color_space": "sRGB"
+    }
+  ],
+  "actions": {
+    "Idle": {
+      "frames": [
+        0.8000000715255737,
+        48.79999923706055
+      ],
+      "duration_seconds": 1.999999965230624,
+      "sampled_max_vertex_motion": 0.030781568261440035,
+      "loop_endpoint_delta": 0.0
+    },
+    "Run": {
+      "frames": [
+        0.8000000715255737,
+        20.0
+      ],
+      "duration_seconds": 0.7999999970197678,
+      "sampled_max_vertex_motion": 0.1980001917486636,
+      "loop_endpoint_delta": 0.0
+    },
+    "Jump": {
+      "frames": [
+        0.8000000715255737,
+        34.39999771118164
+      ],
+      "duration_seconds": 1.3999999016523361,
+      "sampled_max_vertex_motion": 0.3131637579747636,
+      "loop_endpoint_delta": 0.004372568387799707
+    },
+    "Bark": {
+      "frames": [
+        0.8000000715255737,
+        29.600000381469727
+      ],
+      "duration_seconds": 1.2000000129143398,
+      "sampled_max_vertex_motion": 0.04708132343264827,
+      "loop_endpoint_delta": 0.0
+    },
+    "Bite": {
+      "frames": [
+        0.8000000715255737,
+        22.399999618530273
+      ],
+      "duration_seconds": 0.8999999811251959,
+      "sampled_max_vertex_motion": 0.11081376850843794,
+      "loop_endpoint_delta": 3.261948254300685e-05
+    },
+    "Poop": {
+      "frames": [
+        0.8000000715255737,
+        87.20000457763672
+      ],
+      "duration_seconds": 3.600000187754631,
+      "sampled_max_vertex_motion": 0.13462299963479682,
+      "loop_endpoint_delta": 0.0
+    },
+    "Pee": {
+      "frames": [
+        0.8000000715255737,
+        77.5999984741211
+      ],
+      "duration_seconds": 3.19999993344148,
+      "sampled_max_vertex_motion": 0.39675961944722204,
+      "loop_endpoint_delta": 0.0
+    }
+  },
+  "vertices": 1154,
+  "triangles": 602,
+  "max_influences": 4,
+  "custom_face": {
+    "matched_positions": 30,
+    "seam_gap_per_clip": {
+      "Bark": 0.0,
+      "Bite": 0.0,
+      "Idle": 0.0,
+      "Jump": 0.0,
+      "Pee": 0.0,
+      "Poop": 0.0,
+      "Run": 0.0
+    },
+    "mouth_and_ground_per_clip": {
+      "Bark": {
+        "max_opening": 0.02988297795599924,
+        "peak_frame": 20,
+        "lowest_mesh_z": 0.002054175129160285,
+        "highest_ground_clearance": 0.002055431716144085
+      },
+      "Bite": {
+        "max_opening": 0.03759105135909853,
+        "peak_frame": 9,
+        "lowest_mesh_z": 0.0019924049265682697,
+        "highest_ground_clearance": 0.0020554782822728157
+      },
+      "Idle": {
+        "max_opening": 0.0038581638663269706,
+        "peak_frame": 17,
+        "lowest_mesh_z": 0.0020441284868866205,
+        "highest_ground_clearance": 0.002055523917078972
+      },
+      "Jump": {
+        "max_opening": 0.0038581095730213354,
+        "peak_frame": 26,
+        "lowest_mesh_z": 0.001739840256050229,
+        "highest_ground_clearance": 0.2921645939350128
+      },
+      "Pee": {
+        "max_opening": 0.0038581570919173614,
+        "peak_frame": 63,
+        "lowest_mesh_z": 0.00203725416213274,
+        "highest_ground_clearance": 0.0020555993542075157
+      },
+      "Poop": {
+        "max_opening": 0.003858129197980119,
+        "peak_frame": 7,
+        "lowest_mesh_z": 0.0020274724811315536,
+        "highest_ground_clearance": 0.0020554251968860626
+      },
+      "Run": {
+        "max_opening": 0.003858071560429843,
+        "peak_frame": 20,
+        "lowest_mesh_z": 0.001807044493034482,
+        "highest_ground_clearance": 0.002055607968941331
+      }
+    },
+    "upper_lip_v": 0.18933528661727905,
+    "solid_512_png": true,
+    "front_uv_0_to_1": true
+  }
+}

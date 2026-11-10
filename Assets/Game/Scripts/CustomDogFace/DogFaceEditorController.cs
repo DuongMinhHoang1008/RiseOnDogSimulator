@@ -31,6 +31,7 @@ namespace DogSimulator.CustomDogFace
         [SerializeField] private TMP_Text status;
         [SerializeField] private TMP_Text applyLabel;
         [SerializeField] private DogSelectionPreview preview;
+        [SerializeField] private DogFaceWebBridge imagePicker;
         private readonly List<Stroke> strokes = new();
         private Texture2D source;
         private Texture2D composite;
@@ -44,9 +45,11 @@ namespace DogSimulator.CustomDogFace
         private bool dirty;
         private bool alignmentDirty = true;
         private bool connected;
-        private Slider positionX;
-        private Slider positionY;
-        private bool livePreview;
+        [SerializeField] private Slider positionX;
+        [SerializeField] private Slider positionY;
+        [SerializeField] private bool livePreview;
+        private Color brushColor = Color.white;
+        private bool alignmentSlidersBound;
 
         public bool IsOpen => modal != null && modal.activeSelf;
         public event Action<byte[]> Applied;
@@ -56,14 +59,14 @@ namespace DogSimulator.CustomDogFace
 
         private void Awake()
         {
-            if (modal != null) modal.SetActive(false);
-            if (zoomSlider != null) zoomSlider.onValueChanged.AddListener(SetScale);
-            if (rotationSlider != null) rotationSlider.onValueChanged.AddListener(SetRotation);
+            if (modal != null && !livePreview) modal.SetActive(false);
+            BindAlignmentSliders();
         }
 
         public void ConfigureMenu(GameObject page, RawImage drawingCanvas, DogSelectionPreview modelPreview,
-            TMP_Text feedback, Slider size, Slider x, Slider y, Slider angle, Slider brush, TMP_InputField color)
+            TMP_Text feedback, Slider size, Slider x, Slider y, Slider angle, Slider brush)
         {
+            UnbindAlignmentSliders();
             modal = page;
             canvas = drawingCanvas;
             preview = modelPreview;
@@ -71,14 +74,29 @@ namespace DogSimulator.CustomDogFace
             zoomSlider = size;
             rotationSlider = angle;
             brushSizeSlider = brush;
-            colorHex = color;
             positionX = x;
             positionY = y;
             livePreview = true;
-            size.onValueChanged.AddListener(SetScale);
-            angle.onValueChanged.AddListener(SetRotation);
-            x.onValueChanged.AddListener(value => { offset.x = value; InvalidateAlignment(); });
-            y.onValueChanged.AddListener(value => { offset.y = value; InvalidateAlignment(); });
+            BindAlignmentSliders();
+        }
+
+        private void BindAlignmentSliders()
+        {
+            if (alignmentSlidersBound) return;
+            if (zoomSlider != null) zoomSlider.onValueChanged.AddListener(SetScale);
+            if (rotationSlider != null) rotationSlider.onValueChanged.AddListener(SetRotation);
+            if (positionX != null) positionX.onValueChanged.AddListener(SetOffsetX);
+            if (positionY != null) positionY.onValueChanged.AddListener(SetOffsetY);
+            alignmentSlidersBound = true;
+        }
+
+        private void UnbindAlignmentSliders()
+        {
+            if (zoomSlider != null) zoomSlider.onValueChanged.RemoveListener(SetScale);
+            if (rotationSlider != null) rotationSlider.onValueChanged.RemoveListener(SetRotation);
+            if (positionX != null) positionX.onValueChanged.RemoveListener(SetOffsetX);
+            if (positionY != null) positionY.onValueChanged.RemoveListener(SetOffsetY);
+            alignmentSlidersBound = false;
         }
 
         public void Open(bool inRoom)
@@ -86,10 +104,10 @@ namespace DogSimulator.CustomDogFace
             connected = inRoom;
             if (applyLabel != null) applyLabel.text = inRoom ? "Áp dụng cho cả phòng" : "Lưu và chia sẻ khi vào phòng";
             modal.SetActive(true);
-            if (livePreview && DogFaceWebBridge.Instance != null)
+            if (livePreview && imagePicker != null)
             {
-                AttachPicker(DogFaceWebBridge.Instance);
-                DogFaceWebBridge.Instance.SetImageDropEnabled(true);
+                AttachPicker(imagePicker);
+                imagePicker.SetImageDropEnabled(true);
             }
             if (livePreview) { preview?.Rotate(180f); mode = Mode.Align; }
             else preview?.ResetRotation();
@@ -102,7 +120,7 @@ namespace DogSimulator.CustomDogFace
         public void Close()
         {
             activeStroke = null;
-            if (livePreview) DogFaceWebBridge.Instance?.SetImageDropEnabled(false);
+            if (livePreview) imagePicker?.SetImageDropEnabled(false);
             DetachPicker();
             modal.SetActive(false);
             Closed?.Invoke();
@@ -110,7 +128,7 @@ namespace DogSimulator.CustomDogFace
 
         public void ChooseImage()
         {
-            var bridge = DogFaceWebBridge.Instance;
+            var bridge = imagePicker;
             if (bridge == null) { SetStatus("Image picker is unavailable."); return; }
             AttachPicker(bridge);
             bridge.OpenPicker();
@@ -127,6 +145,7 @@ namespace DogSimulator.CustomDogFace
         public void SetAlignMode() => mode = Mode.Align;
         public void SetDrawMode() => mode = Mode.Draw;
         public void SetEraseMode() => mode = Mode.Erase;
+        public void SetBrushColor(Color color) => brushColor = color;
         public void Undo() { if (strokes.Count > 0) { strokes.RemoveAt(strokes.Count - 1); dirty = true; } }
         public void ClearDrawing() { strokes.Clear(); dirty = true; }
 
@@ -187,7 +206,7 @@ namespace DogSimulator.CustomDogFace
 
         private void DetachPicker()
         {
-            var bridge = DogFaceWebBridge.Instance;
+            var bridge = imagePicker;
             if (bridge == null) return;
             bridge.ImagePicked -= OnPicked;
             bridge.PickerFailed -= OnPickerFailed;
@@ -243,6 +262,8 @@ namespace DogSimulator.CustomDogFace
         }
         private void SetScale(float value) { scale = Mathf.Clamp(value, .1f, 8f); InvalidateAlignment(); }
         private void SetRotation(float value) { rotation = Mathf.Clamp(value, -180, 180); InvalidateAlignment(); }
+        private void SetOffsetX(float value) { offset.x = value; InvalidateAlignment(); }
+        private void SetOffsetY(float value) { offset.y = value; InvalidateAlignment(); }
         private void InvalidateAlignment() { alignmentDirty = true; dirty = true; }
 
         private void SyncOffsetSliders()
@@ -265,6 +286,7 @@ namespace DogSimulator.CustomDogFace
 
         private Color ReadColor()
         {
+            if (livePreview) return brushColor;
             var value = colorHex != null ? colorHex.text : "#ffffff";
             return ColorUtility.TryParseHtmlString(value, out var color) ? color : Color.white;
         }
@@ -361,7 +383,8 @@ namespace DogSimulator.CustomDogFace
 
         private void OnDestroy()
         {
-            if (livePreview) DogFaceWebBridge.Instance?.SetImageDropEnabled(false);
+            UnbindAlignmentSliders();
+            if (livePreview) imagePicker?.SetImageDropEnabled(false);
             DetachPicker();
             if (source != null) Destroy(source);
             if (composite != null) Destroy(composite);

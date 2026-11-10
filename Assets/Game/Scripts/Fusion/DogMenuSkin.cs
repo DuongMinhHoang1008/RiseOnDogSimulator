@@ -5,25 +5,34 @@ using UnityEngine;
 
 namespace DogSimulator.Networking
 {
-    internal sealed class DogMenuSkin : IDisposable
+    [Serializable]
+    internal sealed class DogMenuSkin
     {
         public static readonly Color Brown = new(.27f, .15f, .09f);
         public static readonly Color Cream = new(1f, .94f, .83f);
         public static readonly Color Cocoa = new(.51f, .34f, .23f);
         public static readonly Color Muted = new(.53f, .39f, .30f);
+        public static readonly Color HudText = new Color32(48, 58, 54, 255);
+        public static readonly Color HudAlertText = new Color32(128, 61, 32, 255);
+        public const float HudMargin = 24;
+        public const float HudGap = 8;
+        public const float HudRow = 36;
+        public const float HudType = 18;
 
-        public readonly Sprite Paper;
-        public readonly Sprite Primary;
-        public readonly Sprite HudPill;
-        public readonly Sprite Paw;
-        public readonly Sprite Bone;
-        private readonly TMP_FontAsset font;
+        [field: SerializeField] public Sprite Paper { get; private set; }
+        [field: SerializeField] public Sprite Primary { get; private set; }
+        [field: SerializeField] public Sprite HudPill { get; private set; }
+        [field: SerializeField] public Sprite Paw { get; private set; }
+        [field: SerializeField] public Sprite Bone { get; private set; }
+#if UNITY_EDITOR
+        private TMP_FontAsset font;
 
-        public DogMenuSkin()
+        public DogMenuSkin(Func<Sprite, Sprite> saveSprite, Func<TMP_FontAsset> loadFont)
         {
             Paper = RoundSprite("Biscuit", new Color(1f, .98f, .92f), new Color(.94f, .86f, .74f));
             Primary = RoundSprite("Honey", new Color(1f, .90f, .47f), new Color(1f, .68f, .15f));
-            HudPill = RoundSprite("HUD Hint", new Color(.29f, .23f, .14f, .9f), new Color(.20f, .15f, .09f, .9f), Cream);
+            var hudSurface = new Color32(248, 242, 230, 255);
+            HudPill = RoundSprite("HUD Hint", hudSurface, hudSurface, new Color32(200, 189, 169, 255));
             Paw = Icon("Paw", p => Mathf.Min(
                 Oval(p, new Vector2(.5f, .35f), new Vector2(.25f, .20f)),
                 Mathf.Min(Mathf.Min(Oval(p, new Vector2(.18f, .58f), new Vector2(.085f, .11f)),
@@ -39,13 +48,12 @@ namespace DogSimulator.Networking
                     Oval(p, new Vector2(.80f, .36f), new Vector2(.13f, .14f)));
                 return Mathf.Min(middle, Mathf.Min(left, right));
             });
-            var source = Resources.Load<Font>("DogMenu/Sniglet");
-            if (source != null)
-            {
-                font = TMP_FontAsset.CreateFontAsset(source);
-                if (font != null && TMP_Settings.defaultFontAsset != null)
-                    font.fallbackFontAssetTable = new List<TMP_FontAsset> { TMP_Settings.defaultFontAsset };
-            }
+            Paper = saveSprite(Paper);
+            Primary = saveSprite(Primary);
+            HudPill = saveSprite(HudPill);
+            Paw = saveSprite(Paw);
+            Bone = saveSprite(Bone);
+            font = loadFont();
         }
 
         // All menu pages use the same 1600 × 900 composition area.
@@ -87,8 +95,23 @@ namespace DogSimulator.Networking
             return label;
         }
 
-        public UnityEngine.UI.Button Button(RectTransform rect, string caption, Action action, bool primary = false,
+        public UnityEngine.UI.Button Button(RectTransform rect, string caption, UnityEngine.Events.UnityAction action, bool primary = false,
             float fontSize = 30, Sprite icon = null)
+        {
+            var button = MakeButton(rect, caption, primary, fontSize, icon);
+            UnityEditor.Events.UnityEventTools.AddPersistentListener(button.onClick, action);
+            return button;
+        }
+
+        public UnityEngine.UI.Button Button(RectTransform rect, string caption, UnityEngine.Events.UnityAction<int> action,
+            int argument, bool primary, float fontSize, Sprite icon = null)
+        {
+            var button = MakeButton(rect, caption, primary, fontSize, icon);
+            UnityEditor.Events.UnityEventTools.AddIntPersistentListener(button.onClick, action, argument);
+            return button;
+        }
+
+        private UnityEngine.UI.Button MakeButton(RectTransform rect, string caption, bool primary, float fontSize, Sprite icon)
         {
             var image = Surface(rect, primary ? Primary : Paper, Color.white, true);
             var shadow = rect.gameObject.AddComponent<UnityEngine.UI.Shadow>();
@@ -105,7 +128,6 @@ namespace DogSimulator.Networking
                 Surface(At(rect, "Icon", 100, 165, 180, 570), icon, Brown).preserveAspect = true;
             Label(At(rect, "Label", icon == null ? 35 : 285, 0, icon == null ? 1530 : 1250, 900),
                 caption, fontSize, Brown);
-            button.onClick.AddListener(() => action());
             return button;
         }
 
@@ -172,45 +194,12 @@ namespace DogSimulator.Networking
             for (var x = 0; x < size; x++) pixels[y * size + x] = color(x, y);
             texture.SetPixels(pixels);
             texture.Apply(false, true);
-            return Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.one * .5f,
+            var sprite = Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.one * .5f,
                 100, 0, SpriteMeshType.FullRect, Vector4.one * border);
+            sprite.name = name;
+            return sprite;
         }
 
-        public void Dispose()
-        {
-            foreach (var sprite in new[] { Paper, Primary, HudPill, Paw, Bone })
-            {
-                UnityEngine.Object.Destroy(sprite.texture);
-                UnityEngine.Object.Destroy(sprite);
-            }
-            if (font == null) return;
-            foreach (var atlas in font.atlasTextures) UnityEngine.Object.Destroy(atlas);
-            UnityEngine.Object.Destroy(font.material);
-            UnityEngine.Object.Destroy(font);
-        }
-    }
-
-    internal sealed class DogMenuButton : UnityEngine.UI.Button
-    {
-        private float targetScale = 1;
-
-        protected override void DoStateTransition(SelectionState state, bool instant)
-        {
-            base.DoStateTransition(state, instant);
-            targetScale = state == SelectionState.Pressed ? .95f : state == SelectionState.Highlighted ? 1.025f : 1;
-        }
-
-        private void Update()
-        {
-            var scale = Mathf.Lerp(transform.localScale.x, targetScale, 1 - Mathf.Exp(-Time.unscaledDeltaTime * 22));
-            transform.localScale = new Vector3(scale, scale, 1);
-        }
-
-        protected override void OnDisable()
-        {
-            base.OnDisable();
-            transform.localScale = Vector3.one;
-            targetScale = 1;
-        }
+#endif
     }
 }

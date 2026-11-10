@@ -11,7 +11,12 @@ namespace DogSimulator.CustomDogFace
             jpeg = null;
             var json = PlayerPrefs.GetString(CustomDogFaceConstants.StorageKey, string.Empty);
             try { return DogFaceRecord.FromJson(json)?.TryGetJpeg(out jpeg) == true; }
-            catch (Exception) { return false; }
+            catch (ArgumentException) { return false; }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Could not load the saved dog face ({exception.GetType().Name}).");
+                return false;
+            }
         }
 
         public static bool Save(byte[] jpeg)
@@ -27,7 +32,11 @@ namespace DogSimulator.CustomDogFace
 #endif
                 return true;
             }
-            catch (Exception) { return false; }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Could not save the dog face ({exception.GetType().Name}).");
+                return false;
+            }
         }
 
         public static void Delete()

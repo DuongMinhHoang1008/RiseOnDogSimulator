@@ -25,7 +25,7 @@ namespace DogSimulator.Tests
             Assert.That(catalog, Is.Not.Null);
             Assert.That(catalog.Validate(out var error), Is.True, error);
             Assert.That(catalog.Entries.Select(entry => entry.ModelId),
-                Is.EquivalentTo(new[] { 1, 1001, 1002, CustomDogFaceConstants.CustomFaceModelId }));
+                Is.EquivalentTo(new[] { 1, 1001, CustomDogFaceConstants.CustomFaceModelId, 1103, 1104, 1105 }));
             Assert.That(catalog.Entries.Select(entry => entry.ModelId).Distinct().Count(), Is.EqualTo(catalog.Entries.Count));
             var photoDog = catalog.Entries.Single(entry => entry.ModelId == 1001);
             Assert.That(photoDog.VisualPrefab.name, Is.EqualTo("PhotoDogCustomFace"));
@@ -35,9 +35,47 @@ namespace DogSimulator.Tests
             var photoFace = photoDog.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
             Assert.That(photoFace, Is.Not.Null);
             Assert.That(photoFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
-            Assert.That(catalog.Entries.Single(entry => entry.ModelId == 1002).VisualPrefab.name, Is.EqualTo("Dog_Rigged"));
+            var shiba = catalog.Resolve(catalog.FallbackModelId);
+            Assert.That(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromOriginalSource(shiba.VisualPrefab)),
+                Is.EqualTo("Assets/Art/Models/Dogs/ShibaFace_20261105/model/Dog_Rigged.fbx"));
+            Assert.That(shiba.SupportsCustomFace, Is.True);
+            Assert.That(shiba.FaceLayoutVersion, Is.EqualTo(CustomDogFaceConstants.LayoutVersion));
+            var shibaFace = shiba.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
+            Assert.That(shibaFace, Is.Not.Null);
+            Assert.That(shibaFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            Assert.That(shibaFace.TargetRenderer.name, Is.EqualTo("FaceSurface"));
             Assert.That(catalog.Entries.Single(entry => entry.ModelId == CustomDogFaceConstants.CustomFaceModelId)
                 .VisualPrefab.name, Is.EqualTo("BlankFaceDog"));
+            var mrDog = catalog.Entries.Single(entry => entry.ModelId == 1103);
+            Assert.That(mrDog.VisualPrefab.name, Is.EqualTo("MrDogBoxy"));
+            Assert.That(mrDog.FaceLayoutVersion, Is.EqualTo(CustomDogFaceConstants.LayoutVersion));
+            var mrDogFace = mrDog.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
+            Assert.That(mrDogFace, Is.Not.Null);
+            Assert.That(mrDogFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            Assert.That(mrDogFace.TargetRenderer.sharedMaterial.mainTexture.width,
+                Is.EqualTo(CustomDogFaceConstants.TextureSize));
+            var tanDog = catalog.Entries.Single(entry => entry.ModelId == 1104);
+            Assert.That(tanDog.VisualPrefab.name, Is.EqualTo("TanMuzzleDog"));
+            Assert.That(tanDog.FaceLayoutVersion, Is.EqualTo(CustomDogFaceConstants.LayoutVersion));
+            var tanDogFace = tanDog.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
+            Assert.That(tanDogFace, Is.Not.Null);
+            Assert.That(tanDogFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            Assert.That(tanDogFace.TargetRenderer.sharedMaterial.mainTexture.width,
+                Is.EqualTo(CustomDogFaceConstants.TextureSize));
+            var chihuahua = catalog.Resolve(1105);
+            Assert.That(chihuahua.VisualPrefab.name, Is.EqualTo("ChihuahuaF0194"));
+            Assert.That(chihuahua.SupportsCustomFace, Is.True);
+            var chihuahuaFace = chihuahua.VisualPrefab.GetComponentInChildren<DogFaceSurface>();
+            Assert.That(chihuahuaFace, Is.Not.Null);
+            Assert.That(chihuahuaFace.LayoutVersion, Is.EqualTo(CustomDogFaceConstants.LayoutVersion));
+            Assert.That(chihuahuaFace.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            Assert.That(chihuahuaFace.TargetRenderer.sharedMaterial.mainTexture.width,
+                Is.EqualTo(CustomDogFaceConstants.TextureSize));
+            var chihuahuaController = (AnimatorOverrideController)chihuahua.AnimationController;
+            var chihuahuaOverrides = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+            chihuahuaController.GetOverrides(chihuahuaOverrides);
+            Assert.That(chihuahuaOverrides, Has.Count.EqualTo(7));
+            Assert.That(chihuahuaOverrides.Select(pair => pair.Value), Has.None.Null);
             Assert.That(catalog.Resolve(987654).ModelId, Is.EqualTo(catalog.FallbackModelId));
         }
 

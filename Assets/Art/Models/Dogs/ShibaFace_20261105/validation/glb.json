@@ -1,5 +1,5 @@
 {
-  "input": "D:\\IT\\Game\\RiseOnDogSimulator\\Exports\\ShibaFace_20261105\\model\\Dog_Rigged.glb",
+  "input": "model/Dog_Rigged.glb",
   "blender_version": "5.2.3 LTS",
   "errors": [],
   "warnings": [],
@@ -7,9 +7,17 @@
   "bones": 27,
   "meshes": [
     {
+      "name": "FaceSurface",
+      "vertices": 40,
+      "triangles": 22,
+      "unbound_vertices": 0,
+      "unnormalized_vertices": 0,
+      "over_influence_limit": 0
+    },
+    {
       "name": "ShibaFace_Mesh",
-      "vertices": 12541,
-      "triangles": 19728,
+      "vertices": 2392,
+      "triangles": 1274,
       "unbound_vertices": 0,
       "unnormalized_vertices": 0,
       "over_influence_limit": 0
@@ -17,24 +25,14 @@
   ],
   "textures": [
     {
-      "name": "Dog_BaseColor",
+      "name": "BlankFace_Default",
       "size": [
-        2048,
-        2048
+        512,
+        512
       ],
       "available": true,
       "packed": true,
       "color_space": "sRGB"
-    },
-    {
-      "name": "Dog_Normal",
-      "size": [
-        2048,
-        2048
-      ],
-      "available": true,
-      "packed": true,
-      "color_space": "Non-Color"
     }
   ],
   "actions": {
@@ -44,7 +42,7 @@
         48.79999923706055
       ],
       "duration_seconds": 1.999999965230624,
-      "sampled_max_vertex_motion": 0.0568883447329505,
+      "sampled_max_vertex_motion": 0.05652117298294293,
       "loop_endpoint_delta": 0.0
     },
     "Run": {
@@ -53,7 +51,7 @@
         20.0
       ],
       "duration_seconds": 0.7999999970197678,
-      "sampled_max_vertex_motion": 0.22989083073070718,
+      "sampled_max_vertex_motion": 0.23697398540567435,
       "loop_endpoint_delta": 0.0
     },
     "Jump": {
@@ -62,8 +60,8 @@
         34.39999771118164
       ],
       "duration_seconds": 1.3999999016523361,
-      "sampled_max_vertex_motion": 0.3138938286960361,
-      "loop_endpoint_delta": 0.004427767923503407
+      "sampled_max_vertex_motion": 0.32137744507345956,
+      "loop_endpoint_delta": 0.005186281537469551
     },
     "Bark": {
       "frames": [
@@ -71,7 +69,7 @@
         29.600000381469727
       ],
       "duration_seconds": 1.2000000129143398,
-      "sampled_max_vertex_motion": 0.08674811542103573,
+      "sampled_max_vertex_motion": 0.08713242783893384,
       "loop_endpoint_delta": 0.0
     },
     "Poop": {
@@ -80,7 +78,7 @@
         87.20000457763672
       ],
       "duration_seconds": 3.600000187754631,
-      "sampled_max_vertex_motion": 0.1532022369705042,
+      "sampled_max_vertex_motion": 0.15268986102210963,
       "loop_endpoint_delta": 0.0
     },
     "Pee": {
@@ -89,7 +87,7 @@
         77.5999984741211
       ],
       "duration_seconds": 3.19999993344148,
-      "sampled_max_vertex_motion": 0.3405333488641571,
+      "sampled_max_vertex_motion": 0.4050075394096446,
       "loop_endpoint_delta": 0.0
     },
     "Bite": {
@@ -98,12 +96,37 @@
         22.399999618530273
       ],
       "duration_seconds": 0.8999999811251959,
-      "sampled_max_vertex_motion": 0.1006554246665148,
-      "loop_endpoint_delta": 8.155747345178993e-05
+      "sampled_max_vertex_motion": 0.1115309719197872,
+      "loop_endpoint_delta": 0.0
     }
   },
-  "vertices": 12541,
-  "triangles": 19728,
+  "vertices": 2432,
+  "triangles": 1296,
   "max_influences": 4,
+  "custom_face": {
+    "uv_min": [
+      1.4387327773590641e-08,
+      0.0
+    ],
+    "uv_max": [
+      1.0,
+      1.0
+    ],
+    "default_texture": [
+      512,
+      512
+    ],
+    "default_texture_is_solid": true,
+    "matched_seam_vertices": 8,
+    "max_seam_gap_per_clip_scene_units": {
+      "Idle": 0.0,
+      "Run": 0.0,
+      "Jump": 0.0,
+      "Bark": 0.0,
+      "Poop": 0.0,
+      "Pee": 0.0,
+      "Bite": 0.0
+    }
+  },
   "status": "PASS"
 }

@@ -7,20 +7,17 @@ namespace DogSimulator.Player
     public sealed class LocalMovementPreview : MonoBehaviour
     {
         [SerializeField] private DogCamera followCamera;
-        private DogMotor motor;
-        private DogInputReader input;
-        private DogAnimationDriver animations;
-
-        private void Awake()
-        {
-            motor = GetComponent<DogMotor>();
-            input = GetComponent<DogInputReader>();
-            animations = GetComponent<DogAnimationDriver>();
-        }
+        [SerializeField] private DogInputReader input;
+        [SerializeField] private DogAnimationDriver animations;
 
         private void FixedUpdate()
         {
-            if (!input.GameplayEnabled || followCamera == null) { animations.ResetPresentation(); return; }
+            if (!input.GameplayEnabled || followCamera == null)
+            {
+                animations.ResetPresentation();
+                return;
+            }
+
             animations.Simulate(input, followCamera.Yaw, Time.fixedDeltaTime);
         }
 

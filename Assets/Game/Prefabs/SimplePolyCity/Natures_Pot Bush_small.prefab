@@ -181,6 +181,15 @@ MonoBehaviour:
     RawValue: 0
   _ImpactForcesKnockdown:
     RawValue: 0
+  body: {fileID: 1595804722630689412}
+  transformSync: {fileID: 605719842939965014}
+  goldenRenderers:
+  - {fileID: 5278897985857835580}
+  colliders:
+  - {fileID: 2805488288786991412}
+  bowlVisual: {fileID: 0}
+  crateRenderer: {fileID: 0}
+  crateCollider: {fileID: 0}
 --- !u!1001 &5278897985860127324
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -238,6 +247,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 800befcc62026a34693972077c91698d, type: 3}
+--- !u!23 &5278897985857835580 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2300000, guid: 800befcc62026a34693972077c91698d, type: 3}
+  m_PrefabInstance: {fileID: 5278897985860127324}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5278897985859735772 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 800befcc62026a34693972077c91698d, type: 3}

@@ -18,14 +18,17 @@ namespace DogSimulator.Networking
         private const float SpawnRingSpacing = 3.5f;
         [SerializeField] private NetworkConfig config;
         [SerializeField] private NetworkObject playerPrefab;
+        [SerializeField] private CharacterController playerControllerPrefab;
         [SerializeField] private GameObject sandboxRegistryPrefab;
         [SerializeField] private DogModelCatalog modelCatalog;
         [SerializeField] private DogCamera followCamera;
         [SerializeField] private Transform spawnPoint;
-        private SimplePolyCityWorld city;
+        [SerializeField] private SimplePolyCityWorld city;
+        [SerializeField] private FusionRunnerRoot gameRunnerPrefab;
         private NetworkRunner runner;
         private NetworkDogPlayer localPlayer;
         private SandboxInteractionRegistry sandbox;
+        internal SandboxInteractionRegistry Sandbox => sandbox;
         private PlayerRef roomOwner;
         private CancellationTokenSource cancellation;
         private Task connecting;
@@ -54,7 +57,13 @@ namespace DogSimulator.Networking
         public event Action Changed;
         public NetworkDogPlayer LocalPlayer => localPlayer;
 
-        private void Awake() => city = GetComponent<SimplePolyCityWorld>();
+
+        private void Awake() => SandboxInteractionRegistry.RegistrySpawned += OnSandboxSpawned;
+
+        private void OnSandboxSpawned(SandboxInteractionRegistry registry)
+        {
+            if (registry.Runner == runner) sandbox = registry;
+        }
 
         public Task CreateAsync(string nickname, int modelId, int worldSlot = 1) => Begin(nickname, modelId, null, true, false, worldSlot);
         public Task JoinAsync(string nickname, int modelId, string code) => Begin(nickname, modelId, code, false, false, 0);
@@ -80,7 +89,7 @@ namespace DogSimulator.Networking
             if ((singlePlayer || create) && !WorldSaveSlots.IsValidSlot(worldSlot))
             { SetState(SessionState.Failed, "Choose world slot 1, 2 or 3."); return; }
             if (config == null || !config.IsValid || playerPrefab == null
-                || sandboxRegistryPrefab == null
+                || gameRunnerPrefab == null || playerControllerPrefab == null || sandboxRegistryPrefab == null
                 || modelCatalog == null || !modelCatalog.Validate(out _) || !modelCatalog.IsValidModelId(modelId)
                 || followCamera == null || spawnPoint == null)
             { SetState(SessionState.Failed, "Network scene setup is incomplete."); return; }
@@ -105,9 +114,10 @@ namespace DogSimulator.Networking
                         ? new StartGameArgs { GameMode = GameMode.Single, StartGameCancellationToken = cancellation.Token }
                         : FusionSessionOptions.Build(config, settings, candidate, create, creationId, cancellation.Token);
                     pendingNickname = name;
-                    CreateRunner();
+                    var runtime = CreateRunner();
                     runner.ProvideInput = !singlePlayer;
-                    args.SceneManager = runner.gameObject.AddComponent<NetworkSceneManagerDefault>();
+                    args.SceneManager = runtime.SceneManager;
+                    args.ObjectProvider = runtime.ObjectProvider;
                     // This slice keeps the already loaded static arena on each peer. No
                     // network scene objects or scene streaming; use one client per process.
                     deadline = Time.realtimeSinceStartup + config.ConnectionTimeoutSeconds;
@@ -143,6 +153,7 @@ namespace DogSimulator.Networking
                     RoomCode = candidate;
                     SetState(SessionState.Connecting, "Connected. Waiting for the host to spawn your dog…");
                     sandbox = await FindOrCreateSandboxRegistryAsync(cancellation.Token, worldSlot, create);
+                    sandbox.BindCity(city);
                     roomOwner = create
                         ? runner.LocalPlayer
                         : await WaitForRoomOwnerAsync(sandbox, cancellation.Token);
@@ -177,24 +188,24 @@ namespace DogSimulator.Networking
             }
         }
 
-        private void CreateRunner()
+        private FusionRunnerRoot CreateRunner()
         {
-            var root = new GameObject("Fusion Runner — Host Client");
-            runner = root.AddComponent<NetworkRunner>();
+            var runtime = Instantiate(gameRunnerPrefab);
+            runner = runtime.Runner;
             NetworkRunner.CloudConnectionLostCurrentMode = NetworkRunner.CloudConnectionLostMode.Disabled;
             runner.ProvideInput = true;
-            var events = root.AddComponent<NetworkEvents>();
-            // Runtime-added components do not get serialized UnityEvent instances.
-            events.OnShutdown = new NetworkEvents.ShutdownEvent();
+            var events = runtime.Events;
+            events.OnShutdown ??= new NetworkEvents.ShutdownEvent();
             events.OnShutdown.AddListener(OnShutdown);
-            events.PlayerJoined = new NetworkEvents.PlayerEvent();
+            events.PlayerJoined ??= new NetworkEvents.PlayerEvent();
             events.PlayerJoined.AddListener(OnPlayerJoined);
-            events.PlayerLeft = new NetworkEvents.PlayerEvent();
+            events.PlayerLeft ??= new NetworkEvents.PlayerEvent();
             events.PlayerLeft.AddListener(OnPlayerLeft);
-            events.OnInput = new NetworkEvents.InputEvent();
+            events.OnInput ??= new NetworkEvents.InputEvent();
             events.OnInput.AddListener(OnInput);
             runner.AddCallbacks(events);
-            root.AddComponent<CustomDogFaceNetworkService>().Initialize(runner);
+            runtime.FaceService.Initialize(runner);
+            return runtime;
         }
 
         private async Task<SandboxInteractionRegistry> FindOrCreateSandboxRegistryAsync(CancellationToken token,
@@ -205,10 +216,8 @@ namespace DogSimulator.Networking
             while (runner != null && runner.IsRunning && Time.realtimeSinceStartup < expires)
             {
                 token.ThrowIfCancellationRequested();
-                var candidates = FindObjectsByType<SandboxInteractionRegistry>(FindObjectsSortMode.None);
-                foreach (var candidate in candidates)
-                    if (candidate != null && candidate.Object != null && candidate.Object.IsValid && candidate.Runner == runner)
-                        return candidate;
+                if (sandbox != null && sandbox.Object != null && sandbox.Object.IsValid && sandbox.Runner == runner)
+                    return sandbox;
                 if (ownsWorld)
                 {
                     var owner = IsSinglePlayer ? PlayerRef.None : runner.LocalPlayer;
@@ -355,7 +364,11 @@ namespace DogSimulator.Networking
                 var candidate = NetworkDogPlayer.Active[index];
                 if (candidate != null && candidate.Runner == source && candidate.Object != null
                     && candidate.Object.IsValid && candidate.Object.InputAuthority == player)
+                {
+                    candidate.ReleaseHeldTarget();
+                    candidate.ReleaseFromCarrier(null, false);
                     source.Despawn(candidate.Object);
+                }
             }
         }
 
@@ -368,7 +381,7 @@ namespace DogSimulator.Networking
         private Vector3 FindAvailableSpawnPosition(int initialSlot)
         {
             const int maxAttempts = 32;
-            var controller = playerPrefab.GetComponent<CharacterController>();
+            var controller = playerControllerPrefab;
             var center = spawnPoint.rotation * controller.center;
             var halfAxis = spawnPoint.up * Mathf.Max(0, controller.height * .5f - controller.radius);
             if (city != null)
@@ -453,14 +466,8 @@ namespace DogSimulator.Networking
         private async Task DisposeRunnerAsync()
         {
             SaveAndCloseOwnedWorld();
-            SetControlsEnabled(false);
-            localPlayer = null;
-            sandbox = null;
-            roomOwner = PlayerRef.None;
-            SelectedModelId = 0;
+            ClearSessionBindings();
             pendingNickname = string.Empty;
-            if (followCamera != null) followCamera.Unbind();
-            RoomCode = string.Empty;
             var old = runner;
             runner = null; // Ignore callbacks from this attempt before awaiting shutdown.
             if (old == null) return;
@@ -471,16 +478,21 @@ namespace DogSimulator.Networking
         {
             if (destroyed || source != runner || !IsConnected) return;
             sandbox?.SaveWorld();
+            ClearSessionBindings();
+            runner = null;
+            Destroy(source.gameObject);
+            SetState(SessionState.Failed, FusionSessionOptions.Describe(reason));
+        }
+
+        private void ClearSessionBindings()
+        {
             SetControlsEnabled(false);
             localPlayer = null;
             sandbox = null;
             roomOwner = PlayerRef.None;
             SelectedModelId = 0;
-            followCamera.Unbind();
-            runner = null;
+            if (followCamera != null) followCamera.Unbind();
             RoomCode = string.Empty;
-            Destroy(source.gameObject);
-            SetState(SessionState.Failed, FusionSessionOptions.Describe(reason));
         }
 
         private void Update()
@@ -530,6 +542,7 @@ namespace DogSimulator.Networking
 
         private void OnDestroy()
         {
+            SandboxInteractionRegistry.RegistrySpawned -= OnSandboxSpawned;
             SaveAndCloseOwnedWorld();
             destroyed = true;
             cancellation?.Cancel();

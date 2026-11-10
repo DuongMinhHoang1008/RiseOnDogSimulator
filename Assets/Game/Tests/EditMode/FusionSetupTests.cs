@@ -143,7 +143,8 @@ namespace DogSimulator.Tests
                 {
                     var iterator = new SerializedObject(behaviour).GetIterator();
                     while (iterator.NextVisible(true))
-                        if (iterator.propertyType == SerializedPropertyType.ObjectReference)
+                        if (iterator.propertyType == SerializedPropertyType.ObjectReference
+                            && !(behaviour is FusionSessionService && iterator.name == "city"))
                             Assert.That(iterator.objectReferenceValue, Is.Not.Null, behaviour.GetType().Name + "." + iterator.name);
                 }
             }

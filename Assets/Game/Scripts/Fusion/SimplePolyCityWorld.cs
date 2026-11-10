@@ -6,7 +6,7 @@ namespace DogSimulator.Networking
 {
     public sealed class SimplePolyCityWorld : MonoBehaviour
     {
-        public const string MapVersion = "simplepoly-city-v2";
+        public const string MapVersion = "simplepoly-city-v4";
         public const string SaveNamespace = "simplepoly-city-v1";
 
         [Serializable]
@@ -44,6 +44,15 @@ namespace DogSimulator.Networking
         [SerializeField] private VehiclePlacement[] vehicles;
         [SerializeField] private PedestrianPlacement[] pedestrians;
         [SerializeField] private Vector3[] safeSpawns;
+
+        [SerializeField] private NetworkObject goldenBonePrefab;
+        [SerializeField] private NetworkObject missionCratePrefab;
+        internal NetworkObject GoldenBonePrefab => goldenBonePrefab;
+        internal NetworkObject MissionCratePrefab => missionCratePrefab;
+        [SerializeField] private GoldenBoneCourse course;
+        [SerializeField] private DogJail jail;
+        internal GoldenBoneCourse Course => course;
+        internal DogJail Jail => jail;
 
         public Placement[] Props => props;
         public VehiclePlacement[] Vehicles => vehicles;

@@ -7,6 +7,21 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: Block_Coat
+    second: {fileID: 2100000, guid: b41131093674776438c66e0112881d44, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Block_Cream
+    second: {fileID: 2100000, guid: 58b6dc0fc70538e4e800f82de91c3a48, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Block_Ears
+    second: {fileID: 2100000, guid: 16cabf3cbb4ac1e458bb1a0863243b78, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: Claws
     second: {fileID: 2100000, guid: cdae83c1212e02c42857295e3692dde6, type: 2}
   - first:

@@ -225,6 +225,7 @@ MonoBehaviour:
   nonRollingLinearDamping: 1.1
   nonRollingAngularDamping: 2.5
   lifetimeSeconds: 45
+  dropClearance: {fileID: 0}
   _CarrierId:
     Raw: 0
   _ResetPosition: {x: 0, y: 0, z: 0}
@@ -238,3 +239,12 @@ MonoBehaviour:
     RawValue: 0
   _ImpactForcesKnockdown:
     RawValue: 0
+  body: {fileID: 8769580155525682991}
+  transformSync: {fileID: 9114144278436844577}
+  goldenRenderers:
+  - {fileID: 2568738074774257446}
+  colliders:
+  - {fileID: 6657674205304663312}
+  bowlVisual: {fileID: 0}
+  crateRenderer: {fileID: 0}
+  crateCollider: {fileID: 0}

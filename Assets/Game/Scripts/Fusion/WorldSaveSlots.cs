@@ -45,13 +45,7 @@ namespace DogSimulator.Networking
             if (!IsValidSlot(slot)) return;
             var key = Key(slot);
             var json = JsonUtility.ToJson(new Snapshot { version = FormatVersion, props = props });
-            if (PlayerPrefs.GetString(key) == json) return;
-            try
-            {
-                PlayerPrefs.SetString(key, json);
-                PlayerPrefs.Save();
-            }
-            catch (PlayerPrefsException) { Debug.LogWarning($"Could not save world slot {slot} on this device."); }
+            SaveIfChanged(key, json, slot, "world");
         }
 
         private static string Key(int slot) => $"DogSimulator.WorldSlot.{slot}";
@@ -83,13 +77,18 @@ namespace DogSimulator.Networking
             if (!IsValidSlot(slot)) return;
             var key = CityKey(slot);
             var json = JsonUtility.ToJson(new CitySnapshot { props = props });
+            SaveIfChanged(key, json, slot, "city");
+        }
+
+        private static void SaveIfChanged(string key, string json, int slot, string worldType)
+        {
             if (PlayerPrefs.GetString(key) == json) return;
             try
             {
                 PlayerPrefs.SetString(key, json);
                 PlayerPrefs.Save();
             }
-            catch (PlayerPrefsException) { Debug.LogWarning($"Could not save city slot {slot} on this device."); }
+            catch (PlayerPrefsException) { Debug.LogWarning($"Could not save {worldType} slot {slot} on this device."); }
         }
 
         private static string CityKey(int slot) => $"DogSimulator.{SimplePolyCityWorld.SaveNamespace}.WorldSlot.{slot}";

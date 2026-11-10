@@ -25,11 +25,15 @@ namespace DogSimulator.Networking
         [Networked] public Vector3 ImpactImpulse { get; private set; }
         [Networked] public int ImpactRequestId { get; private set; }
         [Networked] public NetworkBool WasThrown { get; private set; }
+        [Networked] internal NetworkBool IsJailBowl { get; set; }
         [Networked] public NetworkBool ImpactForcesKnockdown { get; private set; }
         [Networked] private TickTimer DespawnAt { get; set; }
         [Networked] private float PausedLifetime { get; set; }
-        private Rigidbody body;
-        private Collider[] colliders;
+        [SerializeField] private Rigidbody body;
+        [SerializeField] private NetworkTransform transformSync;
+        [SerializeField] private MeshRenderer[] goldenRenderers;
+        internal float Mass => body.mass;
+        [SerializeField] private Collider[] colliders;
         private Vector3 previousMouthPosition;
         private Vector3 carriedWorldVelocity;
         private bool hasMouthSample;
@@ -40,6 +44,51 @@ namespace DogSimulator.Networking
         private Pose lastFreePose;
         private readonly Collider[] dropOverlaps = new Collider[16];
         private NetworkCityPedestrian pedestrianHit;
+        private Vector3 pedestrianImpact;
+        private float pedestrianSeverity;
+        private readonly HashSet<NetworkId> witnessedThrow = new();
+        internal NetworkId LastReleaseActor { get; private set; }
+        internal bool IsResting => body.linearVelocity.sqrMagnitude < .45f * .45f;
+        [SerializeField] private GameObject bowlVisual;
+        [SerializeField] private Renderer crateRenderer;
+        [SerializeField] private BoxCollider crateCollider;
+        internal int ResetSerial { get; private set; }
+        internal int ReleaseSerial { get; private set; }
+        internal Vector3 LastReleasePosition { get; private set; }
+        private bool goldenPresented;
+        internal bool IsPedestrianCarried => IsCarried && Runner.TryFindObject(CarrierId, out var carrier)
+            && carrier.GetComponent<NetworkCityPedestrian>() != null;
+
+        internal bool CanBeRecovered => !IsCarried && body.linearVelocity.sqrMagnitude < 1f
+            && Physics.Raycast(body.position + Vector3.up * .12f, Vector3.down, .65f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+        internal Vector3 GetMissionPosition(out int carrierRespawn)
+        {
+            carrierRespawn = 0;
+            if (!IsCarried || !Runner.TryFindObject(CarrierId, out var carrier)) return body.position;
+            if (carrier.TryGetComponent<NetworkDogPlayer>(out var dog))
+            {
+                carrierRespawn = dog.RespawnSerial;
+                return dog.MouthAnchor.TransformPoint(carriedLocalPosition);
+            }
+            return carrier.TryGetComponent<NetworkCityPedestrian>(out var npc) ? npc.BoneCarryPose.position : body.position;
+        }
+
+        internal void PresentGoldenBone()
+        {
+            if (goldenPresented) return;
+            goldenPresented = true;
+            var color = new Color(1f, .62f, .035f);
+            var block = new MaterialPropertyBlock();
+            foreach (var mesh in goldenRenderers)
+            {
+                mesh.GetPropertyBlock(block);
+                block.SetColor("_BaseColor", color);
+                block.SetColor("_Color", color);
+                mesh.SetPropertyBlock(block);
+            }
+        }
 
         public static IReadOnlyList<NetworkCarryable> Active => ActiveItems;
         public bool IsCarried => CarrierId.IsValid;
@@ -54,23 +103,26 @@ namespace DogSimulator.Networking
                 if (item == null || item.Runner != runner || !item.Object.HasStateAuthority || !item.IsCarried
                     || !runner.TryFindObject(item.CarrierId, out var carrierObject)
                     || carrierObject.InputAuthority != player) continue;
-                if (!carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier) || !item.TryDrop(carrier))
-                    item.ResetToSpawn();
+                if (carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier))
+                    item.ForceDrop(carrier);
             }
-        }
-
-        private void Awake()
-        {
-            body = GetComponent<Rigidbody>();
-            colliders = GetComponentsInChildren<Collider>(true);
         }
 
         public override void Spawned()
         {
             if (!ActiveItems.Contains(this)) ActiveItems.Add(this);
+            if (IsJailBowl) PresentJailBowl();
             if (Object.HasStateAuthority && IsTemporary) DespawnAt = TickTimer.CreateFromSeconds(Runner, lifetimeSeconds);
             ConfigurePhysics();
             previousFreePosition = transform.position;
+        }
+
+        private void PresentJailBowl()
+        {
+            transform.localScale = Vector3.one;
+            crateRenderer.enabled = false;
+            crateCollider.size = new Vector3(.72f, .26f, .72f);
+            bowlVisual.SetActive(true);
         }
 
         public void InitializeResetPose(Vector3 position, Quaternion rotation, bool moveToResetPose = true)
@@ -83,7 +135,8 @@ namespace DogSimulator.Networking
 
         public bool TryPickup(NetworkDogPlayer carrier)
         {
-            if (!Object.HasStateAuthority || IsCarried || carrier == null || carrier.Object == null) return false;
+            if (!Object.HasStateAuthority || IsCarried || carrier == null || (IsJailBowl && !carrier.InJail)
+                || !carrier.CanPickUp(this, transform.position)) return false;
             if (IsTemporary)
             {
                 if (DespawnAt.Expired(Runner)) return false;
@@ -100,6 +153,27 @@ namespace DogSimulator.Networking
             Revision++;
             ConfigurePhysics();
             return true;
+        }
+
+        internal bool TryRecoverBy(NetworkCityPedestrian npc)
+        {
+            if (!Object.HasStateAuthority || !npc.IsStanding || npc.Runner != Runner || !CanBeRecovered) return false;
+            CarrierId = npc.Object.Id;
+            WasThrown = false;
+            pedestrianHit = null;
+            hasMouthSample = false;
+            Revision++;
+            ConfigurePhysics();
+            var pose = npc.BoneCarryPose;
+            transform.SetPositionAndRotation(pose.position, pose.rotation);
+            return true;
+        }
+
+        internal void DropRecoveredBone(NetworkCityPedestrian npc)
+        {
+            if (!Object.HasStateAuthority || CarrierId != npc.Object.Id) return;
+            var pose = npc.BoneCarryPose;
+            ReleaseAt(pose.position, pose.rotation, Vector3.zero, false);
         }
 
         public bool TryDrop(NetworkDogPlayer carrier)
@@ -133,7 +207,15 @@ namespace DogSimulator.Networking
                 }
             }
             recentCarrierId = carrier.Object.Id;
+            LastReleaseActor = recentCarrierId;
+            witnessedThrow.Clear();
             recentCarrierGraceUntil = Time.unscaledTime + .45f;
+            ReleaseAt(position, rotation, releaseVelocity, thrown);
+            return true;
+        }
+
+        private void ReleaseAt(Vector3 position, Quaternion rotation, Vector3 releaseVelocity, bool thrown)
+        {
             CarrierId = NetworkId.None;
             ResumeLifetime();
             WasThrown = thrown;
@@ -141,13 +223,14 @@ namespace DogSimulator.Networking
             body.position = position;
             body.rotation = rotation;
             previousFreePosition = position;
+            LastReleasePosition = position;
+            ReleaseSerial++;
             Revision++;
             ConfigurePhysics();
             body.WakeUp();
             body.linearVelocity = releaseVelocity;
             body.angularVelocity = Vector3.zero;
             hasMouthSample = false;
-            return true;
         }
 
         private bool TryDropPose(NetworkDogPlayer carrier, Vector3 preferred, out Vector3 position)
@@ -171,11 +254,17 @@ namespace DogSimulator.Networking
             return count == 0;
         }
 
+        internal void ForceDrop(NetworkDogPlayer carrier)
+        {
+            if (!TryDrop(carrier)) ResetToSpawn();
+        }
+
         public void ResetToSpawn()
         {
             if (!Object.HasStateAuthority) return;
             CarrierId = NetworkId.None;
             ResumeLifetime();
+            ResetSerial++;
             WasThrown = false;
             pedestrianHit = null;
             hasMouthSample = false;
@@ -183,6 +272,7 @@ namespace DogSimulator.Networking
             body.position = ResetPosition;
             body.rotation = ResetRotation;
             previousFreePosition = ResetPosition;
+            transformSync.Teleport(ResetPosition, ResetRotation);
             Revision++;
             ConfigurePhysics();
             body.linearVelocity = body.angularVelocity = Vector3.zero;
@@ -193,7 +283,8 @@ namespace DogSimulator.Networking
             if (!Object.HasStateAuthority) return;
             if (pedestrianHit != null)
             {
-                pedestrianHit.HitByThrownProp();
+                var actor = witnessedThrow.Add(pedestrianHit.Object.Id) ? LastReleaseActor : NetworkId.None;
+                pedestrianHit.QueueHit(pedestrianImpact, pedestrianSeverity, actor, AnnoyingAction.ThrownProp);
                 pedestrianHit = null;
             }
             if (IsTemporary && !IsCarried && DespawnAt.Expired(Runner))
@@ -203,8 +294,15 @@ namespace DogSimulator.Networking
             }
             if (IsCarried)
             {
-                if (!Runner.TryFindObject(CarrierId, out var carrierObject)
-                    || !carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier))
+                if (!Runner.TryFindObject(CarrierId, out var carrierObject))
+                { ResetToSpawn(); return; }
+                if (carrierObject.TryGetComponent<NetworkCityPedestrian>(out var npc))
+                {
+                    var pose = npc.BoneCarryPose;
+                    transform.SetPositionAndRotation(pose.position, pose.rotation);
+                    return;
+                }
+                if (!carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier))
                 { ResetToSpawn(); return; }
                 var mouth = carrier.MouthAnchor;
                 if (mouth == null) { TryDrop(carrier); return; }
@@ -226,7 +324,12 @@ namespace DogSimulator.Networking
             if (Object == null || !Object.IsValid || !Object.HasStateAuthority || !WasThrown || IsCarried
                 || collision.relativeVelocity.sqrMagnitude < 4f) return;
             var npc = collision.collider.GetComponentInParent<NetworkCityPedestrian>();
-            if (npc != null && npc.Runner == Runner) pedestrianHit = npc;
+            if (npc == null || npc.Runner != Runner) return;
+            var speed = collision.relativeVelocity.magnitude;
+            var direction = Vector3.ProjectOnPlane(npc.transform.position - transform.position, Vector3.up).normalized;
+            pedestrianHit = npc;
+            pedestrianImpact = direction * speed;
+            pedestrianSeverity = body.mass >= 4f ? speed : Mathf.Min(speed, 4f);
         }
 
         private void ResumeLifetime()
@@ -267,8 +370,14 @@ namespace DogSimulator.Networking
         public override void Render()
         {
             ConfigurePhysics();
-            if (!IsCarried || !Runner.TryFindObject(CarrierId, out var carrierObject)
-                || !carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier)) return;
+            if (!IsCarried || !Runner.TryFindObject(CarrierId, out var carrierObject)) return;
+            if (carrierObject.TryGetComponent<NetworkCityPedestrian>(out var npc))
+            {
+                var pose = npc.BoneCarryPose;
+                transform.SetPositionAndRotation(pose.position, pose.rotation);
+                return;
+            }
+            if (!carrierObject.TryGetComponent<NetworkDogPlayer>(out var carrier)) return;
             var mouth = carrier.MouthAnchor;
             if (mouth == null) return;
 
@@ -292,6 +401,9 @@ namespace DogSimulator.Networking
         }
 
         public override void Despawned(NetworkRunner runner, bool hasState) => ActiveItems.Remove(this);
-        private void OnDestroy() => ActiveItems.Remove(this);
+        private void OnDestroy()
+        {
+            ActiveItems.Remove(this);
+        }
     }
 }

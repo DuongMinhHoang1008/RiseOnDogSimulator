@@ -21,8 +21,8 @@
   "lower_mouth_cavity_max_recess_m": 0.026,
   "source_armature": "Dog_Rig",
   "body": {
-    "vertices": 8865,
-    "triangles": 17482
+    "vertices": 2304,
+    "triangles": 4227
   },
   "face": {
     "vertices": 471,
@@ -73,5 +73,6 @@
     ]
   },
   "fps": 30,
-  "face_layout_version": 1
+  "face_layout_version": 1,
+  "restyle": "Soft low-poly trunk, legs and ears with original face and rig"
 }

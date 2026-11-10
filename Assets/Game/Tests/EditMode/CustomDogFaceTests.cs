@@ -1,5 +1,7 @@
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using DogSimulator.CustomDogFace;
 using DogSimulator.Editor;
 using DogSimulator.Networking;
@@ -37,6 +39,103 @@ namespace DogSimulator.Tests.EditMode
         }
 
         [Test]
+        public void ReconfiguringFaceEditorDetachesPreviousOffsetSliders()
+        {
+            var root = new GameObject("Face editor test");
+            try
+            {
+                var editor = root.AddComponent<DogFaceEditorController>();
+                var oldX = AddSlider("Old X");
+                var oldY = AddSlider("Old Y");
+                var newX = AddSlider("New X");
+                var newY = AddSlider("New Y");
+                var offset = typeof(DogFaceEditorController).GetField("offset", BindingFlags.Instance | BindingFlags.NonPublic);
+                editor.ConfigureMenu(root, null, null, null, null, oldX, oldY, null, null);
+                oldX.onValueChanged.Invoke(.25f);
+                oldY.onValueChanged.Invoke(.5f);
+                Assert.That(offset.GetValue(editor), Is.EqualTo(new Vector2(.25f, .5f)));
+
+                editor.ConfigureMenu(root, null, null, null, null, newX, newY, null, null);
+                editor.ConfigureMenu(root, null, null, null, null, newX, newY, null, null);
+                newX.onValueChanged.Invoke(.75f);
+                newY.onValueChanged.Invoke(.25f);
+                oldX.onValueChanged.Invoke(1f);
+                oldY.onValueChanged.Invoke(1f);
+                Assert.That(offset.GetValue(editor), Is.EqualTo(new Vector2(.75f, .25f)));
+            }
+            finally { Object.DestroyImmediate(root); }
+
+            UnityEngine.UI.Slider AddSlider(string name)
+            {
+                var child = new GameObject(name, typeof(RectTransform));
+                child.transform.SetParent(root.transform);
+                return child.AddComponent<UnityEngine.UI.Slider>();
+            }
+        }
+
+        [Test]
+        public void FaceMessageHeaderRejectsTruncationAndLeavesPayloadUnread()
+        {
+            const string hash = "abcd";
+            using var packet = new MemoryStream();
+            using var writer = new BinaryWriter(packet);
+            writer.Write(0x44464143);
+            writer.Write((byte)CustomDogFaceConstants.ProtocolVersion);
+            writer.Write((byte)2);
+            writer.Write(123u);
+            writer.Write(4);
+            writer.Write(17);
+            writer.Write(CustomDogFaceConstants.CustomFaceModelId);
+            writer.Write(CustomDogFaceConstants.LayoutVersion);
+            writer.Write(1);
+            writer.Write((byte)hash.Length);
+            writer.Write(Encoding.ASCII.GetBytes(hash));
+            writer.Write((byte)0xff);
+            var bytes = packet.ToArray();
+
+            var parser = typeof(CustomDogFaceNetworkService)
+                .GetMethod("TryReadHeader", BindingFlags.Static | BindingFlags.NonPublic);
+            using var shortHeader = new BinaryReader(new MemoryStream(bytes, 0, 30));
+            Assert.That(parser.Invoke(null, new object[] { shortHeader, null }), Is.False);
+            using var shortHash = new BinaryReader(new MemoryStream(bytes, 0, bytes.Length - 2));
+            Assert.That(parser.Invoke(null, new object[] { shortHash, null }), Is.False);
+
+            using var reader = new BinaryReader(new MemoryStream(bytes));
+            var arguments = new object[] { reader, null };
+            Assert.That(parser.Invoke(null, arguments), Is.True);
+            var header = arguments[1];
+            Assert.That(header.GetType().GetField("Hash").GetValue(header), Is.EqualTo(hash));
+            Assert.That(header.GetType().GetField("RequestId").GetValue(header), Is.EqualTo(17));
+            Assert.That(reader.ReadByte(), Is.EqualTo(0xff));
+        }
+
+        [Test]
+        public void FaceStorageRejectsMalformedRecordsAndReloadsSavedJpeg()
+        {
+            const string key = CustomDogFaceConstants.StorageKey;
+            var hadRecord = PlayerPrefs.HasKey(key);
+            var original = PlayerPrefs.GetString(key);
+            const int size = CustomDogFaceConstants.TextureSize;
+            var texture = new Texture2D(size, size, TextureFormat.RGB24, false);
+            try
+            {
+                PlayerPrefs.SetString(key, "{ invalid");
+                Assert.That(DogFaceStorage.TryLoad(out _), Is.False);
+                var jpeg = ImageConversion.EncodeToJPG(texture);
+                Assert.That(DogFaceStorage.Save(jpeg), Is.True);
+                Assert.That(DogFaceStorage.TryLoad(out var saved), Is.True);
+                Assert.That(saved, Is.EqualTo(jpeg));
+            }
+            finally
+            {
+                if (hadRecord) PlayerPrefs.SetString(key, original);
+                else PlayerPrefs.DeleteKey(key);
+                PlayerPrefs.Save();
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void CatalogUsesBlankFaceArtModelWithRuntimeSurface()
         {
             var catalog = AssetDatabase.LoadAssetAtPath<DogModelCatalog>("Assets/Game/Config/DogModelCatalog.asset");
@@ -50,7 +149,15 @@ namespace DogSimulator.Tests.EditMode
                 Is.EqualTo("Assets/Art/Models/Dogs/BlankFaceDog_20261107/Unity/BlankFaceDog.prefab"));
             var surface = entry.VisualPrefab.GetComponentInChildren<DogFaceSurface>(true);
             Assert.That(surface, Is.Not.Null);
-            Assert.That(surface.TargetRenderer, Is.Not.Null);
+            Assert.That(surface.TargetRenderer, Is.InstanceOf<SkinnedMeshRenderer>());
+            var faceRenderer = (SkinnedMeshRenderer)surface.TargetRenderer;
+            Assert.That(faceRenderer.sharedMesh, Is.Not.Null);
+            var texture = faceRenderer.sharedMaterial.mainTexture;
+            Assert.That(texture, Is.Not.Null);
+            Assert.That(texture.width, Is.EqualTo(CustomDogFaceConstants.TextureSize));
+            Assert.That(texture.height, Is.EqualTo(CustomDogFaceConstants.TextureSize));
+            Assert.That(entry.AnimationController.animationClips.Select(AssetDatabase.GetAssetPath),
+                Has.All.EqualTo("Assets/Art/Models/Dogs/BlankFaceDog_20261107/model/BlankFaceDog_Rigged.fbx"));
         }
 
         [Test]

@@ -16,8 +16,21 @@ namespace DogSimulator.Networking
         private enum MessageType : byte { Fetch = 1, Data = 2, Applied = 3 }
         private const int Magic = 0x44464143; // DFAC
         private const int StreamNamespace = 0x4446;
+        private const int FixedHeaderBytes = 31;
         private const float RetrySeconds = 12f;
         private const int MaximumImmediateRetries = 3;
+
+        private struct MessageHeader
+        {
+            public MessageType Type;
+            public NetworkId AvatarId;
+            public int Revision;
+            public int RequestId;
+            public int ModelId;
+            public int LayoutVersion;
+            public int ByteLength;
+            public string Hash;
+        }
 
         private sealed class Pending
         {
@@ -44,6 +57,7 @@ namespace DogSimulator.Networking
         {
             runner = value;
             runner.AddCallbacks(this);
+            NetworkDogPlayer.FaceReceived += OnFaceReceived;
         }
 
         public bool TryGetAppliedProgress(NetworkId avatar, out int applied, out int expected)
@@ -111,6 +125,11 @@ namespace DogSimulator.Networking
             player.RPC_RequestFace(player.FaceRevision);
         }
 
+        private void OnFaceReceived(NetworkDogPlayer player, int revision, byte[] jpeg)
+        {
+            if (player.Runner == runner) ReceiveFace(player, revision, jpeg);
+        }
+
         internal void ReceiveFace(NetworkDogPlayer player, int revision, byte[] jpeg)
         {
             if (revision != player.FaceRevision || !ManifestIsPlausible(player)
@@ -131,7 +150,7 @@ namespace DogSimulator.Networking
         private bool Apply(NetworkDogPlayer player, byte[] jpeg)
         {
             if (jpeg.Length != player.FaceByteLength || player.FaceAppearance == null
-                || player.GetComponent<DogVisualPresenter>()?.RenderedModelId != player.FaceModelId
+                || player.Visual?.RenderedModelId != player.FaceModelId
                 || !player.FaceAppearance.ApplyCustom(player.FaceModelId, player.FaceLayoutVersion, jpeg)) return false;
             renderedRevision[player.Object.Id] = player.FaceRevision;
             pending.Remove(player.Object.Id);
@@ -171,51 +190,79 @@ namespace DogSimulator.Networking
 
         public void OnReliableDataReceived(NetworkRunner sourceRunner, PlayerRef source, ReliableKey key, ReadOnlySpan<byte> data)
         {
-            if (sourceRunner != runner || !runner.IsRunning || data.Length < 30 || data.Length > CustomDogFaceConstants.MaximumJpegBytes + 160) return;
+            if (sourceRunner != runner || runner == null || !runner.IsRunning
+                || data.Length < FixedHeaderBytes || data.Length > CustomDogFaceConstants.MaximumJpegBytes + 160) return;
+
+            using var stream = new MemoryStream(data.ToArray(), false);
+            using var reader = new BinaryReader(stream, Encoding.ASCII, true);
+            if (!TryReadHeader(reader, out var header)) return;
+
             try
             {
-                using var stream = new MemoryStream(data.ToArray(), false);
-                using var reader = new BinaryReader(stream, Encoding.ASCII, true);
-                if (reader.ReadInt32() != Magic || reader.ReadByte() != CustomDogFaceConstants.ProtocolVersion) return;
-                var type = (MessageType)reader.ReadByte();
-                var id = new NetworkId { Raw = reader.ReadUInt32() };
-                var revision = reader.ReadInt32();
-                var requestId = reader.ReadInt32();
-                var modelId = reader.ReadInt32();
-                var layout = reader.ReadInt32();
-                var byteLength = reader.ReadInt32();
-                var hashLength = reader.ReadByte();
-                if (hashLength > 64 || stream.Position + hashLength > stream.Length) return;
-                var hash = Encoding.ASCII.GetString(reader.ReadBytes(hashLength));
-                if (!runner.TryFindObject(id, out var obj)) return;
-                var player = obj.GetComponent<NetworkDogPlayer>();
-                if (player == null || player.FaceRevision != revision || player.FaceModelId != modelId
-                    || player.FaceLayoutVersion != layout || player.FaceByteLength != byteLength
-                    || !string.Equals(player.FaceSha256.ToString(), hash, StringComparison.OrdinalIgnoreCase)) return;
-                switch (type)
-                {
-                    case MessageType.Fetch:
-                        if (!obj.HasStateAuthority || source == runner.LocalPlayer || !runner.IsPlayerCommitted(source)
-                            || player.FaceKind != DogFaceKind.CustomJpeg || player.OwnerFaceJpeg == null) return;
-                        Send(source, MessageType.Data, player, requestId, player.OwnerFaceJpeg);
-                        break;
-                    case MessageType.Data:
-                        if (source != obj.StateAuthority || obj.HasStateAuthority || !ManifestIsPlausible(player)
-                            || stream.Length - stream.Position != byteLength) return;
-                        if (renderedRevision.TryGetValue(id, out var appliedRevision) && appliedRevision == revision) return;
-                        var jpeg = reader.ReadBytes((int)(stream.Length - stream.Position));
-                        if (!DogFaceImageValidator.IsValidFaceJpeg(jpeg, out _)
-                            || !string.Equals(DogFaceImageValidator.Sha256Hex(jpeg), hash, StringComparison.OrdinalIgnoreCase)) return;
-                        cache[hash] = jpeg;
-                        Apply(player, jpeg);
-                        break;
-                    case MessageType.Applied:
-                        if (!obj.HasStateAuthority || source == runner.LocalPlayer || !runner.IsPlayerCommitted(source)) return;
-                        RecordApplied(id, revision, source);
-                        break;
-                }
+                HandleMessage(source, reader, header);
             }
-            catch (Exception) { /* malformed application payloads are ignored */ }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Could not handle custom dog face message ({exception.GetType().Name}).", this);
+            }
+        }
+
+        private static bool TryReadHeader(BinaryReader reader, out MessageHeader header)
+        {
+            header = default;
+            var stream = reader.BaseStream;
+            if (stream.Length - stream.Position < FixedHeaderBytes
+                || reader.ReadInt32() != Magic || reader.ReadByte() != CustomDogFaceConstants.ProtocolVersion) return false;
+
+            var message = new MessageHeader
+            {
+                Type = (MessageType)reader.ReadByte(),
+                AvatarId = new NetworkId { Raw = reader.ReadUInt32() },
+                Revision = reader.ReadInt32(),
+                RequestId = reader.ReadInt32(),
+                ModelId = reader.ReadInt32(),
+                LayoutVersion = reader.ReadInt32(),
+                ByteLength = reader.ReadInt32()
+            };
+            var hashLength = reader.ReadByte();
+            if (hashLength > 64 || stream.Position + hashLength > stream.Length) return false;
+
+            message.Hash = Encoding.ASCII.GetString(reader.ReadBytes(hashLength));
+            header = message;
+            return true;
+        }
+
+        private void HandleMessage(PlayerRef source, BinaryReader reader, MessageHeader header)
+        {
+            if (!runner.TryFindObject(header.AvatarId, out var obj)) return;
+            var player = obj.GetComponent<NetworkDogPlayer>();
+            if (player == null || player.FaceRevision != header.Revision || player.FaceModelId != header.ModelId
+                || player.FaceLayoutVersion != header.LayoutVersion || player.FaceByteLength != header.ByteLength
+                || !string.Equals(player.FaceSha256.ToString(), header.Hash, StringComparison.OrdinalIgnoreCase)) return;
+
+            var stream = reader.BaseStream;
+            switch (header.Type)
+            {
+                case MessageType.Fetch:
+                    if (!obj.HasStateAuthority || source == runner.LocalPlayer || !runner.IsPlayerCommitted(source)
+                        || player.FaceKind != DogFaceKind.CustomJpeg || player.OwnerFaceJpeg == null) return;
+                    Send(source, MessageType.Data, player, header.RequestId, player.OwnerFaceJpeg);
+                    break;
+                case MessageType.Data:
+                    if (source != obj.StateAuthority || obj.HasStateAuthority || !ManifestIsPlausible(player)
+                        || stream.Length - stream.Position != header.ByteLength) return;
+                    if (renderedRevision.TryGetValue(header.AvatarId, out var appliedRevision) && appliedRevision == header.Revision) return;
+                    var jpeg = reader.ReadBytes(header.ByteLength);
+                    if (!DogFaceImageValidator.IsValidFaceJpeg(jpeg, out _)
+                        || !string.Equals(DogFaceImageValidator.Sha256Hex(jpeg), header.Hash, StringComparison.OrdinalIgnoreCase)) return;
+                    cache[header.Hash] = jpeg;
+                    Apply(player, jpeg);
+                    break;
+                case MessageType.Applied:
+                    if (!obj.HasStateAuthority || source == runner.LocalPlayer || !runner.IsPlayerCommitted(source)) return;
+                    RecordApplied(header.AvatarId, header.Revision, source);
+                    break;
+            }
         }
 
         private void RecordApplied(NetworkId id, int revision, PlayerRef player)
@@ -242,7 +289,11 @@ namespace DogSimulator.Networking
             pending.Clear(); renderedRevision.Clear(); cache.Clear(); acknowledgements.Clear();
         }
 
-        private void OnDestroy() { if (runner != null) runner.RemoveCallbacks(this); }
+        private void OnDestroy()
+        {
+            NetworkDogPlayer.FaceReceived -= OnFaceReceived;
+            if (runner != null) runner.RemoveCallbacks(this);
+        }
         public void OnReliableDataProgress(NetworkRunner r, PlayerRef p, ReliableKey k, float progress) { }
         public void OnObjectExitAOI(NetworkRunner r, NetworkObject o, PlayerRef p) { }
         public void OnObjectEnterAOI(NetworkRunner r, NetworkObject o, PlayerRef p) { }
